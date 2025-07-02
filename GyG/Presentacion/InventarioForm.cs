@@ -142,7 +142,7 @@ namespace GyG.Presentacion
         }
 
 
-     private void btnEditar_Click(object sender, EventArgs e)
+private void btnEditar_Click(object sender, EventArgs e)
 {
     if (productoSeleccionadoId == null)
     {
@@ -155,18 +155,22 @@ namespace GyG.Presentacion
 
     try
     {
-        // Parsear valores numéricos y opcionales
         decimal precioInv = decimal.TryParse(txtPrecioInv.Text, out var pi) ? pi : 0;
         decimal precioVenta = decimal.TryParse(txtPrecioVenta.Text, out var pv) ? pv : 0;
         int stock = int.TryParse(txtStock.Text, out var st) ? st : 0;
 
-        // IVA y descuento
+        // Obtener IVA y descuento en porcentaje, convertir a decimal (ej 15 -> 0.15)
         string ivaTexto = txtIVA.Text.Replace("%", "").Trim();
         string descTexto = txtDescuento.Text.Replace("%", "").Trim();
-        decimal.TryParse(ivaTexto, out decimal iva);
-        decimal.TryParse(descTexto, out decimal descuento);
+        decimal.TryParse(ivaTexto, out decimal ivaPorcentaje);
+        decimal.TryParse(descTexto, out decimal descuentoPorcentaje);
 
-        // Fecha de expiracion opcional
+        decimal ivaDecimal = ivaPorcentaje / 100m;
+        decimal descuentoDecimal = descuentoPorcentaje / 100m;
+
+        // Calcular precio final
+        decimal precioFinal = precioVenta * (1 + ivaDecimal) * (1 - descuentoDecimal);
+
         DateTime? fechaExpiracion = null;
         if (dtpFechaExpiracion.Checked)
             fechaExpiracion = dtpFechaExpiracion.Value.Date;
@@ -174,7 +178,7 @@ namespace GyG.Presentacion
         using (var conn = Conexion.ObtenerConexion())
         {
             using (var cmd = new NpgsqlCommand(
-                "SELECT sp_update_producto(@id, @n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc)", conn))
+                "SELECT sp_update_producto(@id, @n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc, @pf)", conn))
             {
                 cmd.Parameters.AddWithValue("id", productoSeleccionadoId);
                 cmd.Parameters.AddWithValue("n", txtNombre.Text.Trim());
@@ -190,8 +194,9 @@ namespace GyG.Presentacion
                     Value = fechaExpiracion.HasValue ? (object)fechaExpiracion.Value.Date : DBNull.Value
                 });
 
-                cmd.Parameters.AddWithValue("iva", iva);
-                cmd.Parameters.AddWithValue("desc", descuento);
+                cmd.Parameters.AddWithValue("iva", ivaPorcentaje);
+                cmd.Parameters.AddWithValue("desc", descuentoPorcentaje);
+                cmd.Parameters.AddWithValue("pf", precioFinal);
 
                 cmd.ExecuteNonQuery();
             }
@@ -207,6 +212,7 @@ namespace GyG.Presentacion
         MessageBox.Show("Error al actualizar: " + ex.Message);
     }
 }
+
 
 
         private void btnEliminar_Click(object sender, EventArgs e)
