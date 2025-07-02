@@ -11,6 +11,14 @@ namespace GyG.Presentacion
         private System.Windows.Forms.TextBox txtDescripcion;
         private System.Windows.Forms.Label lblCategoria;
         private System.Windows.Forms.ComboBox cmbCategoria;
+        private System.Windows.Forms.Label lblBuscar;
+        private System.Windows.Forms.TextBox txtBuscar;
+        private System.Windows.Forms.Label lblIVA;
+        private System.Windows.Forms.TextBox txtIVA;
+        private System.Windows.Forms.Label lblDescuento;
+        private System.Windows.Forms.TextBox txtDescuento;
+
+
         
         private System.Windows.Forms.Label lblPrecioInv;
         private System.Windows.Forms.TextBox txtPrecioInv;
@@ -19,6 +27,7 @@ namespace GyG.Presentacion
         private System.Windows.Forms.Label lblStock;
         private System.Windows.Forms.TextBox txtStock;
         private System.Windows.Forms.Label lblCodigoBarra;
+        private System.Windows.Forms.Label lblFechaExpiracion;
         private System.Windows.Forms.TextBox txtCodigoBarra;
         private System.Windows.Forms.DataGridView dgvProductos;
         private System.Windows.Forms.Button btnGuardar;
@@ -26,17 +35,24 @@ namespace GyG.Presentacion
         private System.Windows.Forms.Button btnEliminar;
         private Button btnEscanearQR;
         private Button btnGestionarCategorias;
+        private DateTimePicker dtpFechaExpiracion;
+
 
 
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.lblNombre = new System.Windows.Forms.Label();
+            this.lblFechaExpiracion = new System.Windows.Forms.Label();
             this.txtNombre = new System.Windows.Forms.TextBox();
+            this.lblIVA = new System.Windows.Forms.Label();
+            this.txtIVA = new System.Windows.Forms.TextBox();
             this.lblDescripcion = new System.Windows.Forms.Label();
             this.txtDescripcion = new System.Windows.Forms.TextBox();
             this.lblCategoria = new System.Windows.Forms.Label();
             this.cmbCategoria = new System.Windows.Forms.ComboBox();
+            this.lblBuscar = new System.Windows.Forms.Label();
+            this.txtBuscar = new System.Windows.Forms.TextBox();
            
             this.lblPrecioInv = new System.Windows.Forms.Label();
             this.txtPrecioInv = new System.Windows.Forms.TextBox();
@@ -51,19 +67,20 @@ namespace GyG.Presentacion
             this.btnEditar = new System.Windows.Forms.Button();
             this.btnEliminar = new System.Windows.Forms.Button();
             this.btnEscanearQR = new System.Windows.Forms.Button();
+            this.dtpFechaExpiracion = new DateTimePicker();
             this.btnGestionarCategorias = new System.Windows.Forms.Button();
 
             this.SuspendLayout();
 
             // Labels and Inputs setup (name, location, size) – simplified
             // Name
-            this.lblNombre.Text = "Nombre:";
+            this.lblNombre.Text = "Nombre *:";
             this.lblNombre.Location = new System.Drawing.Point(20, 20);
             this.txtNombre.Location = new System.Drawing.Point(120, 20);
             this.txtNombre.Width = 200;
 
             // Descripción
-            this.lblDescripcion.Text = "Descripción:";
+            this.lblDescripcion.Text = "Descripción *:";
             this.lblDescripcion.Location = new System.Drawing.Point(20, 60);
             this.txtDescripcion.Location = new System.Drawing.Point(120, 60);
             this.txtDescripcion.Width = 200;
@@ -78,19 +95,19 @@ namespace GyG.Presentacion
             this.btnGestionarCategorias.Location = new System.Drawing.Point(330, 100);
 
             // Precio Inventario
-            this.lblPrecioInv.Text = "Precio Inv.:";
+            this.lblPrecioInv.Text = "Precio Inv. *:";
             this.lblPrecioInv.Location = new System.Drawing.Point(20, 140);
             this.txtPrecioInv.Location = new System.Drawing.Point(120, 140);
             this.txtPrecioInv.Width = 200;
 
             // Precio Venta
-            this.lblPrecioVenta.Text = "Precio Venta:";
+            this.lblPrecioVenta.Text = "Precio Venta *:";
             this.lblPrecioVenta.Location = new System.Drawing.Point(20, 180);
             this.txtPrecioVenta.Location = new System.Drawing.Point(120, 180);
             this.txtPrecioVenta.Width = 200;
 
             // Stock
-            this.lblStock.Text = "Stock:";
+            this.lblStock.Text = "Stock *:";
             this.lblStock.Location = new System.Drawing.Point(20, 220);
             this.txtStock.Location = new System.Drawing.Point(120, 220);
             this.txtStock.Width = 200;
@@ -100,28 +117,68 @@ namespace GyG.Presentacion
             this.lblCodigoBarra.Location = new System.Drawing.Point(20, 260);
             this.txtCodigoBarra.Location = new System.Drawing.Point(120, 260);
             this.txtCodigoBarra.Width = 200;
+            
+            this.lblIVA.Text = "IVA (%):";
+            this.lblIVA.Location = new System.Drawing.Point(480, 140);
+            this.txtIVA.Location = new System.Drawing.Point(590, 140);
+            this.txtIVA.Width = 200;
+
+// Descuento
+            this.lblDescuento = new System.Windows.Forms.Label();
+            this.txtDescuento = new System.Windows.Forms.TextBox();
+
+            this.lblDescuento.Text = "Descuento (%):";
+            this.lblDescuento.Location = new System.Drawing.Point(480, 180);
+            this.txtDescuento.Location = new System.Drawing.Point(590, 180);
+            this.txtDescuento.Width = 200;
+            
+            // Fecha de vencimiento
+            DateTimePicker dtpFechaExpiracion = new DateTimePicker();
+            dtpFechaExpiracion.Name = "dtpFechaExpiracion";
+            this.lblFechaExpiracion.Text = "Fecha Exp.";
+            this.lblFechaExpiracion.Location = new Point(480, 220);
+            dtpFechaExpiracion.Location = new Point(590, 220); 
+            this.dtpFechaExpiracion.Width = 220;
+            dtpFechaExpiracion.Format = DateTimePickerFormat.Short;
+            dtpFechaExpiracion.ShowCheckBox = true; // Esto lo hace opcional
+
+            
+
 
             // Botones
             this.btnGuardar.Text = "Guardar";
-            this.btnGuardar.Location = new System.Drawing.Point(20, 300);
+            this.btnGuardar.Location = new System.Drawing.Point(20, 340);
+            btnGuardar.Click += btnGuardar_Click;
+
 
             this.btnEditar.Text = "Editar";
-            this.btnEditar.Location = new System.Drawing.Point(120, 300);
+            this.btnEditar.Location = new System.Drawing.Point(120, 340);
+            btnEditar.Click += btnEditar_Click;
+
 
             this.btnEliminar.Text = "Eliminar";
-            this.btnEliminar.Location = new System.Drawing.Point(220, 300);
+            this.btnEliminar.Location = new System.Drawing.Point(220, 340);
+            btnEliminar.Click += btnEliminar_Click;
+
             
             this.btnEscanearQR.Text = "Escanear Codigo QR";
-            this.btnEscanearQR.Location = new System.Drawing.Point(120, 300);
+            this.btnEscanearQR.Location = new System.Drawing.Point(120, 340);
 
             // DataGridView
-            this.dgvProductos.Location = new System.Drawing.Point(20, 350);
+            this.dgvProductos.Location = new System.Drawing.Point(20, 410);
             this.dgvProductos.Size = new System.Drawing.Size(760, 250);
             this.dgvProductos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvProductos.ScrollBars = ScrollBars.Both;
             this.dgvProductos.ReadOnly = true;
             this.dgvProductos.CellDoubleClick += new DataGridViewCellEventHandler(this.dgvProductos_CellDoubleClick);
 
+            // Buscador
+            this.lblBuscar.Text = "Buscar:";
+            this.lblBuscar.Location = new System.Drawing.Point(20, 380);
+            this.txtBuscar.Location = new System.Drawing.Point(140, 380);
+            this.txtBuscar.Width = 200;
+            this.txtBuscar.TextChanged += new System.EventHandler(this.txtBuscar_TextChanged);
+            
             // Form
             this.Controls.Add(this.lblNombre);
             this.Controls.Add(this.txtNombre);
@@ -129,6 +186,8 @@ namespace GyG.Presentacion
             this.Controls.Add(this.txtDescripcion);
             this.Controls.Add(this.lblCategoria);
             this.Controls.Add(this.cmbCategoria);
+            this.Controls.Add(this.lblFechaExpiracion);
+            this.Controls.Add(dtpFechaExpiracion);
             
             this.Controls.Add(this.lblPrecioInv);
             this.Controls.Add(this.txtPrecioInv);
@@ -143,10 +202,18 @@ namespace GyG.Presentacion
             this.Controls.Add(this.btnEliminar);
             this.Controls.Add(this.btnGestionarCategorias);
             this.Controls.Add(this.dgvProductos);
+            this.Controls.Add(this.lblBuscar);
+            this.Controls.Add(this.txtBuscar);
+            this.Controls.Add(this.lblIVA);
+            this.Controls.Add(this.txtIVA);
+            this.Controls.Add(this.lblDescuento);
+            this.Controls.Add(this.txtDescuento);
+
+
 
             this.Text = "Gestión de Inventario - GyG";
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.ClientSize = new System.Drawing.Size(800, 620);
+            this.ClientSize = new System.Drawing.Size(800, 680);
 
             this.Load += new System.EventHandler(this.InventarioForm_Load);
             this.ResumeLayout(false);
