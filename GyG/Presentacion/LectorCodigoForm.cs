@@ -202,12 +202,16 @@ namespace GyG.Presentacion
                             }
                             else
                             {
-                                // Producto no existe, habilitar ingreso nuevo
-                                MessageBox.Show("Código no encontrado. Por favor, ingrese los datos para registrar el producto.", "Producto no encontrado");
-                                lblEstado.Text = "Ingresar datos para nuevo producto.";
+                                MessageBox.Show("Código no encontrado. Buscando en API externa...", "Producto no encontrado");
+                                lblEstado.Text = "Buscando en API externa...";
+
+                                // Aquí llamas el método normal que tienes, que no devuelve bool ni es async
+                                BuscarProductoEnAPI(codigo);
+
+                                MessageBox.Show("La búsqueda en la API externa ha finalizado.", "Búsqueda completada");
 
                                 HabilitarIngresoProducto();
-                                txtCodigo.Text = codigo; // Código detectado
+                                txtCodigo.Text = codigo; 
                             }
                         }
                     }
@@ -219,6 +223,55 @@ namespace GyG.Presentacion
                 lblEstado.Text = "Error en búsqueda.";
             }
         }
+        
+        
+        
+        
+        private void BuscarProductoEnAPI(string codigoBarras)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    string url = $"https://world.openfoodfacts.org/api/v0/product/{codigoBarras}.json";
+                    var response = client.GetAsync(url).Result;  // .Result hace la espera sin async
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string json = response.Content.ReadAsStringAsync().Result;
+                        dynamic data = Newtonsoft.Json.JsonConvert.DeserializeObject(json);
+
+                        if (data.status == 1)
+                        {
+                            string nombre = data.product.product_name;
+                            string descripcion = data.product.brands;
+                            string categoria = data.product.categories;
+
+                            // Llenar campos
+                            txtNombre.Text = nombre;
+                            txtDescripcion.Text = descripcion;
+                            txtCategoria.Text = categoria;
+
+                            lblEstado.Text = "Producto encontrado con API.";
+                        }
+                        else
+                        {
+                            lblEstado.Text = "Producto no encontrado en la API.";
+                        }
+                    }
+                    else
+                    {
+                        lblEstado.Text = "Error al consultar la API.";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al consultar la API: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
 
         private void HabilitarIngresoProducto()
         {
@@ -331,6 +384,7 @@ namespace GyG.Presentacion
         MessageBox.Show("Producto registrado correctamente.", "Registro exitoso");
         lblEstado.Text = "Producto registrado.";
         btnGuardar.Enabled = false;
+        LimpiarCampos();
     }
     catch (Exception ex)
     {
@@ -338,6 +392,39 @@ namespace GyG.Presentacion
         lblEstado.Text = "Error en registro.";
     }
 }
+
+        
+        private void LimpiarCampos()
+        {
+            txtCodigo.Text = string.Empty;
+            txtNombre.Text = string.Empty;
+            txtDescripcion.Text = string.Empty;
+            txtCategoria.Text = string.Empty;
+
+            numPrecioInv.Value = 0;
+            numPrecioVenta.Value = 0;
+            numStock.Value = 0;
+            numIVA.Value = 0;
+            numDescuento.Value = 0;
+
+            dtpFechaExpiracion.Value = DateTime.Today;
+            dtpFechaExpiracion.Checked = false;
+
+            txtCodigoManual.Text = string.Empty;
+
+            txtNombre.Enabled = false;
+            txtDescripcion.Enabled = false;
+            txtCategoria.Enabled = false;
+            numPrecioInv.Enabled = false;
+            numPrecioVenta.Enabled = false;
+            numStock.Enabled = false;
+            dtpFechaExpiracion.Enabled = false;
+            numIVA.Enabled = false;
+            numDescuento.Enabled = false;
+
+            btnGuardar.Enabled = false;
+            lblEstado.Text = "Campos limpiados.";
+        }
 
     }
 }
