@@ -82,8 +82,13 @@ namespace GyG.Presentacion
             {
                 using (var conn = Conexion.ObtenerConexion())
                 {
-                    string sql =
-                        "SELECT id, nombre, descripcion, categoria, precio_inventario, precio_venta, stock, codigo, precio_final FROM producto ORDER BY id DESC";
+                    // Agregamos todas las columnas que luego accedes
+                    string sql = @"
+                SELECT id, nombre, descripcion, categoria, precio_inventario, precio_venta, stock, codigo,
+                       fecha_vencimiento, iva, descuento, precio_final
+                FROM producto 
+                ORDER BY id DESC";
+
                     using (var da = new NpgsqlDataAdapter(sql, conn))
                     {
                         DataTable dt = new DataTable();
@@ -137,46 +142,72 @@ namespace GyG.Presentacion
         }
 
 
-        private void btnEditar_Click(object sender, EventArgs e)
+     private void btnEditar_Click(object sender, EventArgs e)
+{
+    if (productoSeleccionadoId == null)
+    {
+        MessageBox.Show("Seleccione un producto haciendo doble clic en la lista.");
+        return;
+    }
+
+    if (!ValidarCampos())
+        return;
+
+    try
+    {
+        // Parsear valores numéricos y opcionales
+        decimal precioInv = decimal.TryParse(txtPrecioInv.Text, out var pi) ? pi : 0;
+        decimal precioVenta = decimal.TryParse(txtPrecioVenta.Text, out var pv) ? pv : 0;
+        int stock = int.TryParse(txtStock.Text, out var st) ? st : 0;
+
+        // IVA y descuento
+        string ivaTexto = txtIVA.Text.Replace("%", "").Trim();
+        string descTexto = txtDescuento.Text.Replace("%", "").Trim();
+        decimal.TryParse(ivaTexto, out decimal iva);
+        decimal.TryParse(descTexto, out decimal descuento);
+
+        // Fecha de expiracion opcional
+        DateTime? fechaExpiracion = null;
+        if (dtpFechaExpiracion.Checked)
+            fechaExpiracion = dtpFechaExpiracion.Value.Date;
+
+        using (var conn = Conexion.ObtenerConexion())
         {
-            if (productoSeleccionadoId == null)
+            using (var cmd = new NpgsqlCommand(
+                "SELECT sp_update_producto(@id, @n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc)", conn))
             {
-                MessageBox.Show("Seleccione un producto haciendo doble clic en la lista.");
-                return;
-            }
+                cmd.Parameters.AddWithValue("id", productoSeleccionadoId);
+                cmd.Parameters.AddWithValue("n", txtNombre.Text.Trim());
+                cmd.Parameters.AddWithValue("d", txtDescripcion.Text.Trim());
+                cmd.Parameters.AddWithValue("c", string.IsNullOrWhiteSpace(cmbCategoria.Text) ? (object)DBNull.Value : cmbCategoria.Text.Trim());
+                cmd.Parameters.AddWithValue("pi", precioInv);
+                cmd.Parameters.AddWithValue("pv", precioVenta);
+                cmd.Parameters.AddWithValue("s", stock);
+                cmd.Parameters.AddWithValue("cod", string.IsNullOrWhiteSpace(txtCodigoBarra.Text) ? (object)DBNull.Value : txtCodigoBarra.Text.Trim());
 
-            if (!ValidarCampos())
-                return;
-
-            try
-            {
-                using (var conn = Conexion.ObtenerConexion())
+                cmd.Parameters.Add(new NpgsqlParameter("fe", NpgsqlTypes.NpgsqlDbType.Date)
                 {
-                    using (var cmd = new NpgsqlCommand("CALL sp_update_producto(@id, @n, @d, @c, @pi, @pv, @s, @cod)",
-                               conn))
-                    {
-                        cmd.Parameters.AddWithValue("id", productoSeleccionadoId);
-                        cmd.Parameters.AddWithValue("n", txtNombre.Text.Trim());
-                        cmd.Parameters.AddWithValue("d", txtDescripcion.Text.Trim());
-                        cmd.Parameters.AddWithValue("c", cmbCategoria.Text);
-                        cmd.Parameters.AddWithValue("pi", Convert.ToDecimal(txtPrecioInv.Text));
-                        cmd.Parameters.AddWithValue("pv", Convert.ToDecimal(txtPrecioVenta.Text));
-                        cmd.Parameters.AddWithValue("s", Convert.ToInt32(txtStock.Text));
-                        cmd.Parameters.AddWithValue("cod", txtCodigoBarra.Text.Trim());
-                        cmd.ExecuteNonQuery();
-                    }
-                }
+                    Value = fechaExpiracion.HasValue ? (object)fechaExpiracion.Value.Date : DBNull.Value
+                });
 
-                MessageBox.Show("Producto actualizado correctamente.");
-                LimpiarCampos();
-                CargarProductos();
-                productoSeleccionadoId = null;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al actualizar: " + ex.Message);
+                cmd.Parameters.AddWithValue("iva", iva);
+                cmd.Parameters.AddWithValue("desc", descuento);
+
+                cmd.ExecuteNonQuery();
             }
         }
+
+        MessageBox.Show("Producto actualizado correctamente.");
+        LimpiarCampos();
+        CargarProductos();
+        productoSeleccionadoId = null;
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Error al actualizar: " + ex.Message);
+    }
+}
+
 
         private void btnEliminar_Click(object sender, EventArgs e)
         {
@@ -195,7 +226,7 @@ namespace GyG.Presentacion
                 {
                     using (var conn = Conexion.ObtenerConexion())
                     {
-                        using (var cmd = new NpgsqlCommand("CALL sp_delete_producto(@id)", conn))
+                        using (var cmd = new NpgsqlCommand("SELECT sp_delete_producto(@id)", conn))
                         {
                             cmd.Parameters.AddWithValue("id", productoSeleccionadoId);
                             cmd.ExecuteNonQuery();
@@ -214,7 +245,7 @@ namespace GyG.Presentacion
             }
         }
 
-      private void btnGuardar_Click(object sender, EventArgs e)
+  private void btnGuardar_Click(object sender, EventArgs e)
 {
     // Primero validamos campos obligatorios
     if (!ValidarCampos())
@@ -240,7 +271,7 @@ namespace GyG.Presentacion
     int.TryParse(txtStock.Text, out int stock);
 
     // Calculamos el precio final usando IVA y descuento
-    decimal precioFinal = precioInv * (1 + ivaDecimal) * (1 - descuentoDecimal);
+    decimal precioFinal = precioVenta * (1 + ivaDecimal) * (1 - descuentoDecimal);
 
     string nombre = txtNombre.Text.Trim();
     string descripcion = txtDescripcion.Text.Trim();
@@ -257,16 +288,22 @@ namespace GyG.Presentacion
     {
         using (var conn = Conexion.ObtenerConexion())
         {
-            using (var cmd = new NpgsqlCommand("SELECT sp_insert_producto(@n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc, @pf)", conn))
+            using (var cmd = new NpgsqlCommand(
+                       "SELECT sp_insert_producto(@n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc, @pf)", conn))
             {
                 cmd.Parameters.AddWithValue("n", nombre);
                 cmd.Parameters.AddWithValue("d", descripcion);
-                cmd.Parameters.AddWithValue("c", (object)categoria ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("c", string.IsNullOrWhiteSpace(categoria) ? (object)DBNull.Value : categoria);
                 cmd.Parameters.AddWithValue("pi", precioInv);
                 cmd.Parameters.AddWithValue("pv", precioVenta);
                 cmd.Parameters.AddWithValue("s", stock);
-                cmd.Parameters.AddWithValue("cod", (object)codigo ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("fe", fechaExpiracion.HasValue ? (object)fechaExpiracion.Value : DBNull.Value);
+                cmd.Parameters.AddWithValue("cod", string.IsNullOrWhiteSpace(codigo) ? (object)DBNull.Value : codigo);
+
+                cmd.Parameters.Add(new NpgsqlParameter("fe", NpgsqlTypes.NpgsqlDbType.Date)
+                {
+                    Value = fechaExpiracion.HasValue ? (object)fechaExpiracion.Value.Date : DBNull.Value
+                });
+
                 cmd.Parameters.AddWithValue("iva", iva);
                 cmd.Parameters.AddWithValue("desc", descuento);
                 cmd.Parameters.AddWithValue("pf", precioFinal);
