@@ -105,6 +105,8 @@ namespace GyG.Presentacion
             this.lblPrecioVenta.Location = new System.Drawing.Point(20, 180);
             this.txtPrecioVenta.Location = new System.Drawing.Point(120, 180);
             this.txtPrecioVenta.Width = 200;
+            
+          
 
             // Stock
             this.lblStock.Text = "Stock *:";
@@ -133,14 +135,14 @@ namespace GyG.Presentacion
             this.txtDescuento.Width = 200;
             
             // Fecha de vencimiento
-            DateTimePicker dtpFechaExpiracion = new DateTimePicker();
+            
             dtpFechaExpiracion.Name = "dtpFechaExpiracion";
             this.lblFechaExpiracion.Text = "Fecha Exp.";
             this.lblFechaExpiracion.Location = new Point(480, 220);
             dtpFechaExpiracion.Location = new Point(590, 220); 
-            this.dtpFechaExpiracion.Width = 220;
             dtpFechaExpiracion.Format = DateTimePickerFormat.Short;
-            dtpFechaExpiracion.ShowCheckBox = true; // Esto lo hace opcional
+            dtpFechaExpiracion.ShowCheckBox = true; 
+            this.dtpFechaExpiracion.Checked = false;
 
             
 
@@ -166,7 +168,7 @@ namespace GyG.Presentacion
 
             // DataGridView
             this.dgvProductos.Location = new System.Drawing.Point(20, 410);
-            this.dgvProductos.Size = new System.Drawing.Size(760, 250);
+            this.dgvProductos.Size = new System.Drawing.Size(1350, 250);
             this.dgvProductos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvProductos.ScrollBars = ScrollBars.Both;
             this.dgvProductos.ReadOnly = true;
@@ -176,7 +178,8 @@ namespace GyG.Presentacion
             this.lblBuscar.Text = "Buscar:";
             this.lblBuscar.Location = new System.Drawing.Point(20, 380);
             this.txtBuscar.Location = new System.Drawing.Point(140, 380);
-            this.txtBuscar.Width = 200;
+            this.txtBuscar.Width = 400;
+            this.txtBuscar.PlaceholderText = "Buscar producto por nombre o descripcion";
             this.txtBuscar.TextChanged += new System.EventHandler(this.txtBuscar_TextChanged);
             
             // Form
@@ -204,6 +207,7 @@ namespace GyG.Presentacion
             this.Controls.Add(this.dgvProductos);
             this.Controls.Add(this.lblBuscar);
             this.Controls.Add(this.txtBuscar);
+            this.Controls.Add(this.dtpFechaExpiracion);
             this.Controls.Add(this.lblIVA);
             this.Controls.Add(this.txtIVA);
             this.Controls.Add(this.lblDescuento);
@@ -213,7 +217,7 @@ namespace GyG.Presentacion
 
             this.Text = "Gestión de Inventario - GyG";
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.ClientSize = new System.Drawing.Size(800, 680);
+            this.ClientSize = new System.Drawing.Size(1410, 680);
 
             this.Load += new System.EventHandler(this.InventarioForm_Load);
             this.ResumeLayout(false);

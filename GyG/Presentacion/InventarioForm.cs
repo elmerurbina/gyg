@@ -155,32 +155,40 @@ private void btnEditar_Click(object sender, EventArgs e)
 
     try
     {
-        decimal precioInv = decimal.TryParse(txtPrecioInv.Text, out var pi) ? pi : 0;
-        decimal precioVenta = decimal.TryParse(txtPrecioVenta.Text, out var pv) ? pv : 0;
-        int stock = int.TryParse(txtStock.Text, out var st) ? st : 0;
+        // Parsear valores numéricos con TryParse para evitar excepciones
+        decimal.TryParse(txtPrecioInv.Text, out decimal precioInv);
+        decimal.TryParse(txtPrecioVenta.Text, out decimal precioVenta);
+        int.TryParse(txtStock.Text, out int stock);
 
-        // Obtener IVA y descuento en porcentaje, convertir a decimal (ej 15 -> 0.15)
+        // Limpiar y parsear IVA y descuento (porcentaje)
         string ivaTexto = txtIVA.Text.Replace("%", "").Trim();
         string descTexto = txtDescuento.Text.Replace("%", "").Trim();
+
         decimal.TryParse(ivaTexto, out decimal ivaPorcentaje);
         decimal.TryParse(descTexto, out decimal descuentoPorcentaje);
 
+        // Convertir a decimales (ej: 15 -> 0.15)
         decimal ivaDecimal = ivaPorcentaje / 100m;
         decimal descuentoDecimal = descuentoPorcentaje / 100m;
 
-        // Calcular precio final
+        // Calcular precio final con fórmula
         decimal precioFinal = precioVenta * (1 + ivaDecimal) * (1 - descuentoDecimal);
 
-        DateTime? fechaExpiracion = null;
-        if (dtpFechaExpiracion.Checked)
-            fechaExpiracion = dtpFechaExpiracion.Value.Date;
+        // Depuración de valores
+        System.Diagnostics.Debug.WriteLine(">>> DTP Checked: " + dtpFechaExpiracion.Checked);
+        System.Diagnostics.Debug.WriteLine(">>> DTP Value: " + dtpFechaExpiracion.Value.ToShortDateString());
+
+        // Fecha expiración: solo si checkbox está marcado, sino NULL
+        DateTime? fechaExpiracion = dtpFechaExpiracion.Checked ? dtpFechaExpiracion.Value.Date : (DateTime?)null;
+
+        System.Diagnostics.Debug.WriteLine(">>> Fecha a enviar a BD: " + (fechaExpiracion.HasValue ? fechaExpiracion.Value.ToShortDateString() : "NULL"));
 
         using (var conn = Conexion.ObtenerConexion())
         {
             using (var cmd = new NpgsqlCommand(
                 "SELECT sp_update_producto(@id, @n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc, @pf)", conn))
             {
-                cmd.Parameters.AddWithValue("id", productoSeleccionadoId);
+                cmd.Parameters.AddWithValue("id", productoSeleccionadoId.Value);
                 cmd.Parameters.AddWithValue("n", txtNombre.Text.Trim());
                 cmd.Parameters.AddWithValue("d", txtDescripcion.Text.Trim());
                 cmd.Parameters.AddWithValue("c", string.IsNullOrWhiteSpace(cmbCategoria.Text) ? (object)DBNull.Value : cmbCategoria.Text.Trim());
@@ -189,10 +197,18 @@ private void btnEditar_Click(object sender, EventArgs e)
                 cmd.Parameters.AddWithValue("s", stock);
                 cmd.Parameters.AddWithValue("cod", string.IsNullOrWhiteSpace(txtCodigoBarra.Text) ? (object)DBNull.Value : txtCodigoBarra.Text.Trim());
 
-                cmd.Parameters.Add(new NpgsqlParameter("fe", NpgsqlTypes.NpgsqlDbType.Date)
+                // ✅ Aquí el parámetro clave: explícito y controlado
+                var paramFecha = new NpgsqlParameter("fe", NpgsqlTypes.NpgsqlDbType.Date);
+                if (fechaExpiracion.HasValue)
                 {
-                    Value = fechaExpiracion.HasValue ? (object)fechaExpiracion.Value.Date : DBNull.Value
-                });
+                    paramFecha.Value = fechaExpiracion.Value;
+                }
+                else
+                {
+                    paramFecha.Value = DBNull.Value;
+                }
+
+                cmd.Parameters.Add(paramFecha);
 
                 cmd.Parameters.AddWithValue("iva", ivaPorcentaje);
                 cmd.Parameters.AddWithValue("desc", descuentoPorcentaje);
@@ -210,8 +226,10 @@ private void btnEditar_Click(object sender, EventArgs e)
     catch (Exception ex)
     {
         MessageBox.Show("Error al actualizar: " + ex.Message);
+        System.Diagnostics.Debug.WriteLine(">>> Error: " + ex.Message);
     }
 }
+
 
 
 
@@ -253,49 +271,47 @@ private void btnEditar_Click(object sender, EventArgs e)
 
   private void btnGuardar_Click(object sender, EventArgs e)
 {
-    // Primero validamos campos obligatorios
+    // Validar campos obligatorios antes de continuar
     if (!ValidarCampos())
     {
         MessageBox.Show("Por favor complete correctamente los campos obligatorios (marcados con *).");
         return;
     }
 
-    // Limpiamos símbolos y parseamos IVA y descuento
+    // Limpiar símbolos y parsear IVA y descuento (porcentaje)
     string ivaTexto = txtIVA.Text.Replace("%", "").Trim();
     string descTexto = txtDescuento.Text.Replace("%", "").Trim();
 
-    decimal.TryParse(ivaTexto, out decimal iva);
-    decimal.TryParse(descTexto, out decimal descuento);
+    decimal.TryParse(ivaTexto, out decimal ivaPorcentaje);
+    decimal.TryParse(descTexto, out decimal descuentoPorcentaje);
 
-    // Convertimos porcentaje a decimal (ej. 15% => 0.15)
-    decimal ivaDecimal = iva / 100m;
-    decimal descuentoDecimal = descuento / 100m;
+    // Convertir porcentaje a decimal (ej: 15 -> 0.15)
+    decimal ivaDecimal = ivaPorcentaje / 100m;
+    decimal descuentoDecimal = descuentoPorcentaje / 100m;
 
-    // Parseamos los otros valores necesarios
+    // Parsear otros valores numéricos con TryParse
     decimal.TryParse(txtPrecioInv.Text, out decimal precioInv);
     decimal.TryParse(txtPrecioVenta.Text, out decimal precioVenta);
     int.TryParse(txtStock.Text, out int stock);
 
-    // Calculamos el precio final usando IVA y descuento
+    // Calcular precio final con la fórmula
     decimal precioFinal = precioVenta * (1 + ivaDecimal) * (1 - descuentoDecimal);
 
+    // Preparar datos de texto, usando DBNull.Value si están vacíos
     string nombre = txtNombre.Text.Trim();
     string descripcion = txtDescripcion.Text.Trim();
     string categoria = string.IsNullOrWhiteSpace(cmbCategoria.Text) ? null : cmbCategoria.Text.Trim();
     string codigo = string.IsNullOrWhiteSpace(txtCodigoBarra.Text) ? null : txtCodigoBarra.Text.Trim();
 
-    DateTime? fechaExpiracion = null;
-    if (dtpFechaExpiracion.Checked)
-    {
-        fechaExpiracion = dtpFechaExpiracion.Value.Date;
-    }
+    // Solo asignar fecha si checkbox está marcado, sino null
+    DateTime? fechaExpiracion = dtpFechaExpiracion.Checked ? dtpFechaExpiracion.Value.Date : (DateTime?)null;
 
     try
     {
         using (var conn = Conexion.ObtenerConexion())
         {
             using (var cmd = new NpgsqlCommand(
-                       "SELECT sp_insert_producto(@n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc, @pf)", conn))
+                "SELECT sp_insert_producto(@n, @d, @c, @pi, @pv, @s, @cod, @fe, @iva, @desc, @pf)", conn))
             {
                 cmd.Parameters.AddWithValue("n", nombre);
                 cmd.Parameters.AddWithValue("d", descripcion);
@@ -305,13 +321,16 @@ private void btnEditar_Click(object sender, EventArgs e)
                 cmd.Parameters.AddWithValue("s", stock);
                 cmd.Parameters.AddWithValue("cod", string.IsNullOrWhiteSpace(codigo) ? (object)DBNull.Value : codigo);
 
-                cmd.Parameters.Add(new NpgsqlParameter("fe", NpgsqlTypes.NpgsqlDbType.Date)
-                {
-                    Value = fechaExpiracion.HasValue ? (object)fechaExpiracion.Value.Date : DBNull.Value
-                });
+                // Parámetro fecha: DBNull si no hay fecha
+                var paramFecha = new NpgsqlParameter("fe", NpgsqlTypes.NpgsqlDbType.Date);
+                if (dtpFechaExpiracion.Checked)
+                    paramFecha.Value = dtpFechaExpiracion.Value.Date;
+                else
+                    paramFecha.Value = DBNull.Value;
 
-                cmd.Parameters.AddWithValue("iva", iva);
-                cmd.Parameters.AddWithValue("desc", descuento);
+                cmd.Parameters.Add(paramFecha);
+                cmd.Parameters.AddWithValue("iva", ivaPorcentaje);
+                cmd.Parameters.AddWithValue("desc", descuentoPorcentaje);
                 cmd.Parameters.AddWithValue("pf", precioFinal);
 
                 cmd.ExecuteNonQuery();
@@ -327,6 +346,7 @@ private void btnEditar_Click(object sender, EventArgs e)
         MessageBox.Show("Error al guardar producto: " + ex.Message);
     }
 }
+
 
         private bool ValidarCampos()
         {
@@ -413,6 +433,8 @@ private void btnEditar_Click(object sender, EventArgs e)
             txtPrecioVenta.Clear();
             txtStock.Clear();
             txtCodigoBarra.Clear();
+            txtIVA.Clear();
+            txtDescuento.Clear();
             productoSeleccionadoId = null;
         }
 
