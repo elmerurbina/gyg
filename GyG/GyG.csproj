@@ -45,6 +45,9 @@
       <Compile Update="Presentacion\LectorCodigoForm.cs">
         <SubType>Form</SubType>
       </Compile>
+      <Compile Update="Presentacion\GestionCategoriasForm.cs">
+        <SubType>Form</SubType>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>

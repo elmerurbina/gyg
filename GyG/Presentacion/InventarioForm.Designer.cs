@@ -11,7 +11,7 @@ namespace GyG.Presentacion
         private System.Windows.Forms.TextBox txtDescripcion;
         private System.Windows.Forms.Label lblCategoria;
         private System.Windows.Forms.ComboBox cmbCategoria;
-        private System.Windows.Forms.Button btnAgregarCategoria;
+        
         private System.Windows.Forms.Label lblPrecioInv;
         private System.Windows.Forms.TextBox txtPrecioInv;
         private System.Windows.Forms.Label lblPrecioVenta;
@@ -24,6 +24,9 @@ namespace GyG.Presentacion
         private System.Windows.Forms.Button btnGuardar;
         private System.Windows.Forms.Button btnEditar;
         private System.Windows.Forms.Button btnEliminar;
+        private Button btnEscanearQR;
+        private Button btnGestionarCategorias;
+
 
         private void InitializeComponent()
         {
@@ -34,7 +37,7 @@ namespace GyG.Presentacion
             this.txtDescripcion = new System.Windows.Forms.TextBox();
             this.lblCategoria = new System.Windows.Forms.Label();
             this.cmbCategoria = new System.Windows.Forms.ComboBox();
-            this.btnAgregarCategoria = new System.Windows.Forms.Button();
+           
             this.lblPrecioInv = new System.Windows.Forms.Label();
             this.txtPrecioInv = new System.Windows.Forms.TextBox();
             this.lblPrecioVenta = new System.Windows.Forms.Label();
@@ -47,6 +50,8 @@ namespace GyG.Presentacion
             this.btnGuardar = new System.Windows.Forms.Button();
             this.btnEditar = new System.Windows.Forms.Button();
             this.btnEliminar = new System.Windows.Forms.Button();
+            this.btnEscanearQR = new System.Windows.Forms.Button();
+            this.btnGestionarCategorias = new System.Windows.Forms.Button();
 
             this.SuspendLayout();
 
@@ -64,12 +69,13 @@ namespace GyG.Presentacion
             this.txtDescripcion.Width = 200;
 
             // Categoría
-            this.lblCategoria.Text = "Categoría:";
+            this.lblCategoria.Text = "Categoría (Opcional):";
             this.lblCategoria.Location = new System.Drawing.Point(20, 100);
             this.cmbCategoria.Location = new System.Drawing.Point(120, 100);
             this.cmbCategoria.Width = 200;
-            this.btnAgregarCategoria.Text = "+";
-            this.btnAgregarCategoria.Location = new System.Drawing.Point(330, 100);
+            this.btnGestionarCategorias.Text = "+";
+            this.btnGestionarCategorias.Click += new System.EventHandler(this.BtnGestionarCategorias_Click);
+            this.btnGestionarCategorias.Location = new System.Drawing.Point(330, 100);
 
             // Precio Inventario
             this.lblPrecioInv.Text = "Precio Inv.:";
@@ -104,6 +110,9 @@ namespace GyG.Presentacion
 
             this.btnEliminar.Text = "Eliminar";
             this.btnEliminar.Location = new System.Drawing.Point(220, 300);
+            
+            this.btnEscanearQR.Text = "Escanear Codigo QR";
+            this.btnEscanearQR.Location = new System.Drawing.Point(120, 300);
 
             // DataGridView
             this.dgvProductos.Location = new System.Drawing.Point(20, 350);
@@ -120,7 +129,7 @@ namespace GyG.Presentacion
             this.Controls.Add(this.txtDescripcion);
             this.Controls.Add(this.lblCategoria);
             this.Controls.Add(this.cmbCategoria);
-            this.Controls.Add(this.btnAgregarCategoria);
+            
             this.Controls.Add(this.lblPrecioInv);
             this.Controls.Add(this.txtPrecioInv);
             this.Controls.Add(this.lblPrecioVenta);
@@ -132,6 +141,7 @@ namespace GyG.Presentacion
             this.Controls.Add(this.btnGuardar);
             this.Controls.Add(this.btnEditar);
             this.Controls.Add(this.btnEliminar);
+            this.Controls.Add(this.btnGestionarCategorias);
             this.Controls.Add(this.dgvProductos);
 
             this.Text = "Gestión de Inventario - GyG";

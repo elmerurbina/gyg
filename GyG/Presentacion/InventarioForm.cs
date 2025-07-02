@@ -20,6 +20,17 @@ namespace GyG.Presentacion
         {
             CargarCategorias();
             CargarProductos();
+            btnEscanearQR = new Button
+            {
+                Text = "Escanear QR",
+                Width = 120,
+                Height = 30,
+                Left = 600, // ajustá según diseño
+                Top = 20
+            };
+            btnEscanearQR.Click += BtnEscanearQR_Click;
+            this.Controls.Add(btnEscanearQR);
+
         }
 
         private void CargarCategorias()
@@ -44,6 +55,25 @@ namespace GyG.Presentacion
                 MessageBox.Show("Error al cargar categorías: " + ex.Message);
             }
         }
+        
+        private void BtnGestionarCategorias_Click(object sender, EventArgs e)
+        {
+            using (var gestionCat = new GestionCategoriasForm())
+            {
+                gestionCat.ShowDialog();
+            }
+            CargarCategorias(); // Recarga siempre después de cerrar el formulario
+        }
+
+        
+        private void BtnEscanearQR_Click(object sender, EventArgs e)
+        {
+            var lector = new LectorCodigoForm(); // Debés tener este formulario ya creado
+            lector.ShowDialog();
+
+            // Opcional: si tu lector llena datos del producto, lo podrías actualizar aquí.
+        }
+
 
         private void CargarProductos()
         {
