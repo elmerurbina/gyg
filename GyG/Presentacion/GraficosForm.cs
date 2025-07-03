@@ -11,10 +11,34 @@ namespace GyG.Presentacion
 {
     public partial class GraficosForm : Form
     {
+        
+        private int paginaActualRentabilidad = 0;
+        private int productosPorPaginaRentabilidad = 10;
+        private List<(string nombre, decimal rentabilidad)> listaRentabilidadCompleta;
+
         public GraficosForm()
         {
             InitializeComponent();
+            // Botón Anterior
+            Button btnAnteriorRentabilidad = new Button
+            {
+                Text = "Anterior",
+                Location = new Point(chartRentabilidad.Location.X, chartRentabilidad.Location.Y + chartRentabilidad.Height + 10)
+            };
+            btnAnteriorRentabilidad.Click += btnAnteriorRentabilidad_Click;
+            this.Controls.Add(btnAnteriorRentabilidad);
+
+// Botón Siguiente
+            Button btnSiguienteRentabilidad = new Button
+            {
+                Text = "Siguiente",
+                Location = new Point(btnAnteriorRentabilidad.Location.X + btnAnteriorRentabilidad.Width + 10, btnAnteriorRentabilidad.Location.Y)
+            };
+            btnSiguienteRentabilidad.Click += btnSiguienteRentabilidad_Click;
+            this.Controls.Add(btnSiguienteRentabilidad);
+
             CargarDatosGraficos();
+            
         }
 
         private void CargarDatosGraficos()
@@ -23,6 +47,7 @@ namespace GyG.Presentacion
             CargarProductosMenosVendidos();
             CargarRentabilidadProductos();
             CargarProyeccionHistorialVentas();
+            
         }
 
         private void CargarProductosMasVendidos()
@@ -119,42 +144,73 @@ namespace GyG.Presentacion
             {
                 using var conn = Conexion.ObtenerConexion();
                 var cmd = new NpgsqlCommand(@"
-                    SELECT p.nombre,
-                           SUM(fd.cantidad * (fd.precio_unitario - p.precio_inventario)) AS rentabilidad
-                    FROM factura_detalle fd
-                    JOIN producto p ON fd.id_producto = p.id
-                    GROUP BY p.nombre
-                    ORDER BY rentabilidad DESC
-                    LIMIT 10;", conn);
+            SELECT p.nombre,
+                   SUM(fd.cantidad * (fd.precio_unitario - p.precio_inventario)) AS rentabilidad
+            FROM factura_detalle fd
+            JOIN producto p ON fd.id_producto = p.id
+            GROUP BY p.nombre
+            ORDER BY rentabilidad DESC", conn);  // Sin LIMIT para traer todo
 
                 using var reader = cmd.ExecuteReader();
-                var nombres = new System.Collections.Generic.List<string>();
-                var rentabilidades = new System.Collections.Generic.List<decimal>();
+                listaRentabilidadCompleta = new List<(string, decimal)>();
 
                 while (reader.Read())
                 {
-                    nombres.Add(reader.GetString(0));
-                    rentabilidades.Add(reader.IsDBNull(1) ? 0 : reader.GetDecimal(1));
+                    string nombre = reader.GetString(0);
+                    decimal rentabilidad = reader.IsDBNull(1) ? 0 : reader.GetDecimal(1);
+                    listaRentabilidadCompleta.Add((nombre, rentabilidad));
                 }
-
-                chartRentabilidad.Series.Clear();
-                var series = new Series("Rentabilidad")
-                {
-                    ChartType = SeriesChartType.Column,
-                    Color = Color.Blue
-                };
-                for (int i = 0; i < nombres.Count; i++)
-                {
-                    series.Points.AddXY(nombres[i], rentabilidades[i]);
-                }
-
-                chartRentabilidad.Series.Add(series);
-                chartRentabilidad.ChartAreas[0].AxisX.Interval = 1;
-                chartRentabilidad.ChartAreas[0].AxisX.LabelStyle.Angle = -45;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error cargando rentabilidad: " + ex.Message);
+            }
+
+            // Cargar primera página
+            MostrarPaginaRentabilidad(paginaActualRentabilidad);
+        }
+
+        private void MostrarPaginaRentabilidad(int pagina)
+        {
+            if (listaRentabilidadCompleta == null || listaRentabilidadCompleta.Count == 0)
+                return;
+
+            int skip = pagina * productosPorPaginaRentabilidad;
+            var paginaDatos = listaRentabilidadCompleta.Skip(skip).Take(productosPorPaginaRentabilidad).ToList();
+
+            chartRentabilidad.Series.Clear();
+            var series = new Series("Rentabilidad")
+            {
+                ChartType = SeriesChartType.Column,
+                Color = Color.Blue
+            };
+
+            foreach (var item in paginaDatos)
+            {
+                series.Points.AddXY(item.nombre, item.rentabilidad);
+            }
+
+            chartRentabilidad.Series.Add(series);
+            chartRentabilidad.ChartAreas[0].AxisX.Interval = 1;
+            chartRentabilidad.ChartAreas[0].AxisX.LabelStyle.Angle = -45;
+        }
+
+        private void btnAnteriorRentabilidad_Click(object sender, EventArgs e)
+        {
+            if (paginaActualRentabilidad > 0)
+            {
+                paginaActualRentabilidad--;
+                MostrarPaginaRentabilidad(paginaActualRentabilidad);
+            }
+        }
+
+        private void btnSiguienteRentabilidad_Click(object sender, EventArgs e)
+        {
+            int maxPaginas = (int)Math.Ceiling((double)listaRentabilidadCompleta.Count / productosPorPaginaRentabilidad);
+            if (paginaActualRentabilidad < maxPaginas - 1)
+            {
+                paginaActualRentabilidad++;
+                MostrarPaginaRentabilidad(paginaActualRentabilidad);
             }
         }
 

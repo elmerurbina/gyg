@@ -75,7 +75,7 @@ partial class GraficosForm
         // 
         // GraficosForm
         // 
-        this.ClientSize = new System.Drawing.Size(950, 550);
+        this.ClientSize = new System.Drawing.Size(950, 650);
         this.Controls.Add(this.chartMasVendidos);
         this.Controls.Add(this.chartMenosVendidos);
         this.Controls.Add(this.chartRentabilidad);
