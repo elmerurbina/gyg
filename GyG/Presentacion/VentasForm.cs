@@ -515,14 +515,8 @@ namespace GyG.Presentacion
 
             MessageBox.Show("Venta registrada exitosamente.", "Venta registrada");
 
-            if (cbProductos.SelectedItem is Producto productoSeleccionado)
-            {
-                int nuevoStock = ObtenerStockProducto(productoSeleccionado.Id);
-                lblStockProducto.Text = $"Stock disponible: {nuevoStock}";
+            RefrescarProductoSeleccionado();
 
-                // También, actualizar el objeto Producto del ComboBox para reflejar nuevo stock
-                productoSeleccionado.Stock = nuevoStock;
-            }
             
             // Generar y guardar factura en PDF
             using (var conn = Conexion.ObtenerConexion())
@@ -534,6 +528,42 @@ namespace GyG.Presentacion
         }
         
         
+        
+        private void RefrescarProductoSeleccionado()
+        {
+            if (cbProductos.SelectedItem is Producto productoSeleccionado)
+            {
+                int id = productoSeleccionado.Id;
+
+                using (var conn = Conexion.ObtenerConexion())
+                using (var cmd = new NpgsqlCommand("SELECT nombre, descripcion, precio_venta, stock, iva, descuento FROM producto WHERE id = @id", conn))
+                {
+                    cmd.Parameters.AddWithValue("id", id);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            productoSeleccionado.Nombre = reader.GetString(0);
+                            productoSeleccionado.Descripcion = reader.GetString(1);
+                            productoSeleccionado.PrecioVenta = reader.GetDecimal(2);
+                            productoSeleccionado.Stock = reader.GetInt32(3);
+                            productoSeleccionado.IVA = reader.GetDecimal(4);
+                            productoSeleccionado.Descuento = reader.GetDecimal(5);
+
+                            // Refrescar campos
+                            txtDescripcion.Text = productoSeleccionado.Descripcion;
+                            txtPrecio.Text = productoSeleccionado.PrecioVenta.ToString("F2");
+                            numIVA.Value = productoSeleccionado.IVA;
+                            numDescuento.Value = productoSeleccionado.Descuento;
+                            lblStockProducto.Text = $"Stock disponible: {productoSeleccionado.Stock}";
+                            CalcularPrecioFinal();
+                        }
+                    }
+                }
+            }
+        }
+
+
         
         private int ObtenerStockProducto(int idProducto)
         {
@@ -737,8 +767,7 @@ namespace GyG.Presentacion
 }
 
    
-   
-  public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
+   public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
 {
     byte[] pdfBytes;
 
@@ -753,20 +782,21 @@ namespace GyG.Presentacion
             iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
         titulo.Alignment = iTextElement.ALIGN_CENTER;
         doc.Add(titulo);
-
         doc.Add(new iTextParagraph(" ")); // Espacio
 
-        // Obtener info del cliente y productos
-        string clienteNombre = "", telefonoCliente = "", fecha = "";
+        // Variables para cliente y factura
+        string clienteNombre = "", telefonoCliente = "", fecha = "", estadoPago = "";
         decimal total = 0;
         DataTable productos = new DataTable();
 
+        // Obtener datos de factura y productos
         using (var conn = new NpgsqlConnection(connectionString))
         {
             conn.Open();
 
+            // Datos generales factura
             using (var cmd = new NpgsqlCommand(@"
-                SELECT c.nombre, c.telefono, f.total, f.fecha
+                SELECT c.nombre, c.telefono, f.total, f.fecha, f.estado_pago
                 FROM factura f
                 JOIN cliente c ON f.id_cliente = c.id
                 WHERE f.id = @id", conn))
@@ -780,10 +810,12 @@ namespace GyG.Presentacion
                         telefonoCliente = reader.GetString(1);
                         total = reader.GetDecimal(2);
                         fecha = reader.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+                        estadoPago = reader.GetString(4);
                     }
                 }
             }
 
+            // Detalle de productos
             using (var da = new NpgsqlDataAdapter(@"
                 SELECT 
                     prod.nombre AS producto,
@@ -802,14 +834,15 @@ namespace GyG.Presentacion
             }
         }
 
-        // Encabezado cliente
+        // Información del cliente y factura
         doc.Add(new iTextParagraph($"N° Factura: {idFactura}"));
         doc.Add(new iTextParagraph($"Cliente: {clienteNombre}"));
         doc.Add(new iTextParagraph($"Teléfono: {telefonoCliente}"));
         doc.Add(new iTextParagraph($"Fecha: {fecha}"));
+        doc.Add(new iTextParagraph($"Estado de Pago: {estadoPago}"));
         doc.Add(new iTextParagraph(" "));
 
-        // Tabla
+        // Tabla de productos
         iTextPdfPTable table = new iTextPdfPTable(7);
         table.WidthPercentage = 100;
         table.SetWidths(new float[] { 20, 25, 10, 10, 10, 10, 15 });
@@ -846,31 +879,29 @@ namespace GyG.Presentacion
         doc.Add(new iTextParagraph($"TOTAL: ${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
         doc.Add(new iTextParagraph(" "));
 
-        // Dibujo de líneas de firma y texto debajo usando PdfContentByte
+        // Líneas de firma y texto
         PdfContentByte cb = writer.DirectContent;
         float yLinea = doc.BottomMargin + 50;
         float anchoLinea = 60;
 
-        // Línea izquierda: Entregué Conforme
+        // Línea izquierda - "Entregué Conforme"
         float xEntregue = doc.LeftMargin;
         cb.MoveTo(xEntregue, yLinea);
         cb.LineTo(xEntregue + anchoLinea, yLinea);
         cb.Stroke();
 
-        // Línea derecha: Recibí Conforme
+        // Línea derecha - "Recibí Conforme"
         float xRecibi = doc.PageSize.Width - doc.RightMargin - anchoLinea;
         cb.MoveTo(xRecibi, yLinea);
         cb.LineTo(xRecibi + anchoLinea, yLinea);
         cb.Stroke();
 
-        // Texto debajo de las líneas
+        // Texto debajo de líneas
         BaseFont bf = BaseFont.CreateFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
         cb.BeginText();
         cb.SetFontAndSize(bf, 10);
-
         cb.ShowTextAligned(Element.ALIGN_CENTER, "Entregué Conforme", xEntregue + anchoLinea / 2, yLinea - 12, 0);
         cb.ShowTextAligned(Element.ALIGN_CENTER, "Recibí Conforme", xRecibi + anchoLinea / 2, yLinea - 12, 0);
-
         cb.EndText();
 
         // Mensaje final
@@ -882,7 +913,7 @@ namespace GyG.Presentacion
         pdfBytes = ms.ToArray();
     }
 
-    // Guardar en BD y abrir archivo
+    // Guardar en base de datos y abrir el PDF
     using (var conn = new NpgsqlConnection(connectionString))
     {
         conn.Open();
@@ -906,6 +937,7 @@ namespace GyG.Presentacion
         });
     }
 }
+
 
 
 
