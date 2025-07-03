@@ -509,6 +509,8 @@ namespace GyG.Presentacion
                         cmdStock.Parameters.AddWithValue("id_producto", item.Id);
                         cmdStock.ExecuteNonQuery();
                     }
+                    int stockActualizado = ObtenerStockProducto(item.Id);
+                    ActualizarStockProductoEnCombo(item.Id, stockActualizado);
                 }
 
             }
@@ -516,6 +518,7 @@ namespace GyG.Presentacion
             MessageBox.Show("Venta registrada exitosamente.", "Venta registrada");
 
    
+            
 
             
             // Generar y guardar factura en PDF
@@ -528,6 +531,35 @@ namespace GyG.Presentacion
         }
         
 
+        private void ActualizarStockProductoEnCombo(int idProducto, int nuevoStock)
+        {
+            for (int i = 0; i < cbProductos.Items.Count; i++)
+            {
+                if (cbProductos.Items[i] is Producto producto && producto.Id == idProducto)
+                {
+                    producto.Stock = nuevoStock;
+                    break;
+                }
+            }
+        }
+
+        private void ActualizarStockLabel()
+        {
+            if (cbProductos.SelectedItem is Producto productoSeleccionado)
+            {
+                using (var conn = Conexion.ObtenerConexion())
+                using (var cmd = new NpgsqlCommand("SELECT stock FROM producto WHERE id = @id", conn))
+                {
+                    cmd.Parameters.AddWithValue("@id", productoSeleccionado.Id);
+                    var result = cmd.ExecuteScalar();
+
+                    if (result != null && int.TryParse(result.ToString(), out int stockActualizado))
+                    {
+                        lblStockProducto.Text = $"Stock disponible: {stockActualizado}";
+                    }
+                }
+            }
+        }
 
         
         private int ObtenerStockProducto(int idProducto)
