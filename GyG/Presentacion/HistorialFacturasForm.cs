@@ -11,12 +11,13 @@ namespace GyG.Presentacion
     {
         private DataGridView dgvHistorialFacturas;
         private Button btnAbrirFactura;
+        private Button btnCancelarCredito;
 
         public HistorialFacturasForm()
         {
             InitializeComponent();
             this.Text = "Historial de Facturas - Ventas";
-            this.Size = new Size(750, 450);
+            this.Size = new Size(750, 500);
             this.StartPosition = FormStartPosition.CenterParent;
 
             dgvHistorialFacturas = new DataGridView
@@ -32,6 +33,7 @@ namespace GyG.Presentacion
             dgvHistorialFacturas.Columns["id"].Visible = false;
             dgvHistorialFacturas.Columns.Add("nombre_archivo", "Nombre Archivo");
             dgvHistorialFacturas.Columns.Add("fecha", "Fecha");
+            dgvHistorialFacturas.Columns.Add("estado_pago", "Estado de Pago");
 
             this.Controls.Add(dgvHistorialFacturas);
 
@@ -39,13 +41,78 @@ namespace GyG.Presentacion
             {
                 Text = "Abrir Factura Seleccionada",
                 Dock = DockStyle.Bottom,
-                Height = 40
+                Height = 40,
+                BackColor = Color.FromArgb(0, 123, 255),
             };
             btnAbrirFactura.Click += BtnAbrirFactura_Click;
             this.Controls.Add(btnAbrirFactura);
 
+            btnCancelarCredito = new Button
+            {
+                Text = "Cancelar Crédito (Marcar como Pagado)",
+                Dock = DockStyle.Bottom,
+                Height = 40,
+                Width = 50,
+                BackColor = Color.FromArgb(40, 167, 69),
+                Visible = false
+            };
+            btnCancelarCredito.Click += BtnCancelarCredito_Click;
+            this.Controls.Add(btnCancelarCredito);
+
+            dgvHistorialFacturas.SelectionChanged += DgvHistorialFacturas_SelectionChanged;
+
             CargarHistorialFacturas();
         }
+
+        
+        private void DgvHistorialFacturas_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvHistorialFacturas.SelectedRows.Count == 0)
+            {
+                btnCancelarCredito.Visible = false;
+                return;
+            }
+
+            string estado = dgvHistorialFacturas.SelectedRows[0].Cells["estado_pago"].Value?.ToString();
+
+            btnCancelarCredito.Visible = estado == "credito";
+        }
+
+        
+        private void BtnCancelarCredito_Click(object sender, EventArgs e)
+        {
+            if (dgvHistorialFacturas.SelectedRows.Count == 0) return;
+
+            DialogResult result = MessageBox.Show("¿Desea marcar esta factura como pagada (cancelar crédito)?",
+                "Confirmar", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes) return;
+
+            string nombreArchivo = dgvHistorialFacturas.SelectedRows[0].Cells["nombre_archivo"].Value.ToString();
+
+            int idFactura = 0;
+
+            if (nombreArchivo.StartsWith("factura_") && nombreArchivo.EndsWith(".pdf"))
+            {
+                string idStr = nombreArchivo.Replace("factura_", "").Replace(".pdf", "");
+                int.TryParse(idStr, out idFactura);
+            }
+
+            if (idFactura > 0)
+            {
+                using (var conn = Conexion.ObtenerConexion())
+                using (var cmd = new NpgsqlCommand("UPDATE factura SET estado_pago = 'contado' WHERE id = @id", conn))
+                {
+                    cmd.Parameters.AddWithValue("@id", idFactura);
+                    cmd.ExecuteNonQuery();
+                }
+
+                MessageBox.Show("Crédito cancelado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CargarHistorialFacturas();
+                btnCancelarCredito.Visible = false;
+            }
+        }
+
 
         private void CargarHistorialFacturas()
         {
@@ -53,11 +120,12 @@ namespace GyG.Presentacion
 
             using (var conn = Conexion.ObtenerConexion())
             using (var cmd = new NpgsqlCommand(@"
-                SELECT id, nombre_archivo, fecha
-                FROM archivo_pdf
-                WHERE tipo = 'factura'
-                ORDER BY fecha DESC
-                LIMIT 50", conn))
+        SELECT a.id, a.nombre_archivo, a.fecha, f.estado_pago
+        FROM archivo_pdf a
+        JOIN factura f ON a.nombre_archivo = CONCAT('factura_', f.id, '.pdf')
+        WHERE a.tipo = 'factura'
+        ORDER BY a.fecha DESC
+        LIMIT 50", conn))
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -65,11 +133,13 @@ namespace GyG.Presentacion
                     int id = reader.GetInt32(0);
                     string nombre = reader.GetString(1);
                     DateTime fecha = reader.IsDBNull(2) ? DateTime.MinValue : reader.GetDateTime(2);
+                    string estadoPago = reader.IsDBNull(3) ? "" : reader.GetString(3);
 
-                    dgvHistorialFacturas.Rows.Add(id, nombre, fecha == DateTime.MinValue ? "" : fecha.ToString("dd/MM/yyyy HH:mm"));
+                    dgvHistorialFacturas.Rows.Add(id, nombre, fecha == DateTime.MinValue ? "" : fecha.ToString("dd/MM/yyyy HH:mm"), estadoPago);
                 }
             }
         }
+
 
         private void BtnAbrirFactura_Click(object sender, EventArgs e)
         {

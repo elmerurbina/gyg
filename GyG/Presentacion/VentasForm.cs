@@ -515,7 +515,7 @@ namespace GyG.Presentacion
 
             MessageBox.Show("Venta registrada exitosamente.", "Venta registrada");
 
-            RefrescarProductoSeleccionado();
+   
 
             
             // Generar y guardar factura en PDF
@@ -527,41 +527,6 @@ namespace GyG.Presentacion
             LimpiarTodo(); // Limpia carrito, cliente, etc.
         }
         
-        
-        
-        private void RefrescarProductoSeleccionado()
-        {
-            if (cbProductos.SelectedItem is Producto productoSeleccionado)
-            {
-                int id = productoSeleccionado.Id;
-
-                using (var conn = Conexion.ObtenerConexion())
-                using (var cmd = new NpgsqlCommand("SELECT nombre, descripcion, precio_venta, stock, iva, descuento FROM producto WHERE id = @id", conn))
-                {
-                    cmd.Parameters.AddWithValue("id", id);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            productoSeleccionado.Nombre = reader.GetString(0);
-                            productoSeleccionado.Descripcion = reader.GetString(1);
-                            productoSeleccionado.PrecioVenta = reader.GetDecimal(2);
-                            productoSeleccionado.Stock = reader.GetInt32(3);
-                            productoSeleccionado.IVA = reader.GetDecimal(4);
-                            productoSeleccionado.Descuento = reader.GetDecimal(5);
-
-                            // Refrescar campos
-                            txtDescripcion.Text = productoSeleccionado.Descripcion;
-                            txtPrecio.Text = productoSeleccionado.PrecioVenta.ToString("F2");
-                            numIVA.Value = productoSeleccionado.IVA;
-                            numDescuento.Value = productoSeleccionado.Descuento;
-                            lblStockProducto.Text = $"Stock disponible: {productoSeleccionado.Stock}";
-                            CalcularPrecioFinal();
-                        }
-                    }
-                }
-            }
-        }
 
 
         
