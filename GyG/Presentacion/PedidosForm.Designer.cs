@@ -21,7 +21,7 @@ namespace GyG.Presentacion
 
         private void InitializeComponent()
         {
-            this.dgvProveedores = new System.Windows.Forms.DataGridView();
+            this.dgvPedidos = new System.Windows.Forms.DataGridView();
             this.dgvProductos = new System.Windows.Forms.DataGridView();
             this.txtUmbral = new System.Windows.Forms.TextBox();
             this.cmbProveedores = new System.Windows.Forms.ComboBox();
@@ -32,7 +32,7 @@ namespace GyG.Presentacion
             this.lblProveedores = new System.Windows.Forms.Label();
             this.lblProductos = new System.Windows.Forms.Label();
 
-            ((System.ComponentModel.ISupportInitialize)(this.dgvProveedores)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvPedidos)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProductos)).BeginInit();
           
             this.SuspendLayout();
@@ -40,15 +40,18 @@ namespace GyG.Presentacion
             // 
             // dgvProveedores
             // 
-            this.dgvProveedores.BackgroundColor = System.Drawing.Color.WhiteSmoke;
-            this.dgvProveedores.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvProveedores.Location = new System.Drawing.Point(20, 60);
-            this.dgvProveedores.Name = "dgvProveedores";
-            this.dgvProveedores.RowHeadersWidth = 51;
-            this.dgvProveedores.RowTemplate.Height = 29;
-            this.dgvProveedores.Size = new System.Drawing.Size(450, 180);
+            this.dgvPedidos.BackgroundColor = System.Drawing.Color.WhiteSmoke;
+            this.dgvPedidos.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvPedidos.Location = new System.Drawing.Point(20, 60);
+            this.dgvPedidos.Name = "dgvProveedores";
+            this.dgvPedidos.RowHeadersWidth = 51;
+            this.dgvPedidos.RowTemplate.Height = 29;
+            dgvProductos.MultiSelect = true;  // Permite seleccionar varias filas
+            dgvProductos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;  // Selección por fila completa
+
+            this.dgvPedidos.Size = new System.Drawing.Size(450, 180);
             dgvProductos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvProveedores.TabIndex = 0;
+            this.dgvPedidos.TabIndex = 0;
 
             // 
             // dgvProductos
@@ -77,7 +80,7 @@ namespace GyG.Presentacion
             // 
             this.cmbProveedores.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbProveedores.FormattingEnabled = true;
-            this.cmbProveedores.Location = new System.Drawing.Point(550, 120);
+            this.cmbProveedores.Location = new System.Drawing.Point(570, 120);
             this.cmbProveedores.Name = "cmbProveedores";
             this.cmbProveedores.Size = new System.Drawing.Size(220, 28);
             this.cmbProveedores.TabIndex = 3;
@@ -126,7 +129,7 @@ namespace GyG.Presentacion
             // 
             this.lblProveedor.AutoSize = true;
             this.lblProveedor.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.lblProveedor.Location = new System.Drawing.Point(470, 120);
+            this.lblProveedor.Location = new System.Drawing.Point(480, 120);
             this.lblProveedor.Name = "lblProveedor";
             this.lblProveedor.Size = new System.Drawing.Size(88, 23);
             this.lblProveedor.TabIndex = 7;
@@ -141,7 +144,7 @@ namespace GyG.Presentacion
             this.lblProveedores.Name = "lblProveedores";
             this.lblProveedores.Size = new System.Drawing.Size(116, 23);
             this.lblProveedores.TabIndex = 8;
-            this.lblProveedores.Text = "Proveedores:";
+            this.lblProveedores.Text = "Historial de Pedidos:";
 
             // 
             // lblProductos
@@ -164,6 +167,16 @@ namespace GyG.Presentacion
             this.btnManejarProveedores.UseVisualStyleBackColor = true;
             this.btnManejarProveedores.Click += new System.EventHandler(this.btnManejarProveedores_Click);
             this.Controls.Add(this.btnManejarProveedores);
+            
+            Label lblInfoSeleccionMultiple = new Label();
+            lblInfoSeleccionMultiple.Name = "lblInfoSeleccionMultiple";
+            lblInfoSeleccionMultiple.Text = "⚠️ Para seleccionar varios productos, presiona Ctrl + Click";
+            lblInfoSeleccionMultiple.ForeColor = Color.Blue;
+            lblInfoSeleccionMultiple.Location = new System.Drawing.Point(400, 500);
+            lblInfoSeleccionMultiple.AutoSize = true;
+            lblInfoSeleccionMultiple.Location = new Point(dgvProductos.Location.X, dgvProductos.Location.Y + dgvProductos.Height + 5);
+            this.Controls.Add(lblInfoSeleccionMultiple);
+
 
 
             // 
@@ -172,7 +185,7 @@ namespace GyG.Presentacion
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.ClientSize = new System.Drawing.Size(800, 530);
+            this.ClientSize = new System.Drawing.Size(850, 550);
             this.Controls.Add(this.lblProductos);
             this.Controls.Add(this.lblProveedores);
             this.Controls.Add(this.lblProveedor);
@@ -182,11 +195,11 @@ namespace GyG.Presentacion
             this.Controls.Add(this.cmbProveedores);
             this.Controls.Add(this.txtUmbral);
             this.Controls.Add(this.dgvProductos);
-            this.Controls.Add(this.dgvProveedores);
+            this.Controls.Add(this.dgvPedidos);
             this.Name = "PedidosForm";
             this.Text = "Gestión de Pedidos";
 
-            ((System.ComponentModel.ISupportInitialize)(this.dgvProveedores)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvPedidos)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvProductos)).EndInit();
             
             this.ResumeLayout(false);
@@ -195,7 +208,7 @@ namespace GyG.Presentacion
 
         #endregion
 
-        private System.Windows.Forms.DataGridView dgvProveedores;
+        private System.Windows.Forms.DataGridView dgvPedidos;
         private System.Windows.Forms.DataGridView dgvProductos;
         private System.Windows.Forms.TextBox txtUmbral;
         private System.Windows.Forms.ComboBox cmbProveedores;
