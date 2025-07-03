@@ -217,6 +217,19 @@ namespace GyG.Presentacion
             this.lblTotal.Size = new Size(300, 24);
             this.lblTotal.Font = new Font("Arial", 10, FontStyle.Bold);
             this.lblTotal.Text = "Total: $0.00";
+            
+            Button btnHistorialFacturas = new Button
+            {
+                Text = "Historial Facturas - Ventas",
+                Location = new Point(30, 550),
+                Width = 180,
+                Height = 35,
+                BackColor = Color.LightBlue,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnHistorialFacturas.Click += BtnHistorialFacturas_Click;
+
+            this.Controls.Add(btnHistorialFacturas);
 
             // Añadir controles al formulario
             this.Controls.Add(lblProducto);

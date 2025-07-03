@@ -31,6 +31,7 @@ namespace GyG.Presentacion
         private Label lblItemsCarrito;
         private Label lblInfoEditarCantidad;
         private Label lblStockProducto;
+      
 
         
         public VentasForm()
@@ -40,6 +41,7 @@ namespace GyG.Presentacion
             
             txtNombreCliente.Leave += txtNombreCliente_Leave;
             txtNombreCliente.KeyDown += TxtNombreCliente_KeyDown;
+           
 
             
             lblItemsCarrito = new Label();
@@ -87,6 +89,14 @@ namespace GyG.Presentacion
             numDescuento.ValueChanged += (s, e) => CalcularPrecioFinal();
 
         }
+        
+        
+        private void BtnHistorialFacturas_Click(object sender, EventArgs e)
+        {
+            HistorialFacturasForm historialForm = new HistorialFacturasForm();
+            historialForm.ShowDialog(this);
+        }
+
 
         private void CargarProductos()
         {
