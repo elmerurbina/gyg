@@ -133,7 +133,8 @@ public partial class ProformaForm : Form
             FROM proforma p
             JOIN cliente c ON p.id_cliente = c.id
             LEFT JOIN factura f ON f.id = p.id
-            LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id = p.id
+            LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id_relacionado = p.id
+
             ORDER BY p.fecha DESC;
         ", conn))
         using (var reader = cmd.ExecuteReader())
@@ -471,11 +472,11 @@ public partial class ProformaForm : Form
     {
         using var conn = Conexion.ObtenerConexion();
         using var cmd = new NpgsqlCommand(@"
-            SELECT nombre_archivo, contenido
-            FROM archivo_pdf
-            WHERE tipo = 'proforma' AND id = @id
-            LIMIT 1;
-        ", conn);
+        SELECT nombre_archivo, contenido
+        FROM archivo_pdf
+        WHERE tipo = 'proforma' AND id_relacionado = @id
+        LIMIT 1;
+    ", conn);
 
         cmd.Parameters.AddWithValue("@id", idProforma);
 
@@ -492,4 +493,5 @@ public partial class ProformaForm : Form
 
         return null;
     }
+
 }

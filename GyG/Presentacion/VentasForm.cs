@@ -741,13 +741,15 @@ namespace GyG.Presentacion
     {
         conn.Open();
         using (var cmd = new NpgsqlCommand(@"
-            INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido)
-            VALUES (@nombre, @tipo, @contenido)", conn))
-        {
-            cmd.Parameters.AddWithValue("@nombre", $"proforma_{idProforma}.pdf");
-            cmd.Parameters.AddWithValue("@tipo", "proforma");
-            cmd.Parameters.AddWithValue("@contenido", pdfBytes);
-            cmd.ExecuteNonQuery();
+    INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido, id_relacionado)
+    VALUES (@nombre, @tipo, @contenido, @id)", conn))
+{
+    cmd.Parameters.AddWithValue("@nombre", $"proforma_{idProforma}.pdf");
+    cmd.Parameters.AddWithValue("@tipo", "proforma");
+    cmd.Parameters.AddWithValue("@contenido", pdfBytes);
+    cmd.Parameters.AddWithValue("@id", idProforma);
+    cmd.ExecuteNonQuery();
+
             
             // Guardar temporalmente el archivo en disco y abrirlo
             string nombreArchivo = $"proforma_{idProforma}.pdf";
