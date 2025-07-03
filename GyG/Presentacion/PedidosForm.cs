@@ -285,7 +285,7 @@ namespace GyG.Presentacion
                         conn.Open();
 
                     string query = @"
-            SELECT id, nombre, descripcion, stock
+            SELECT id, nombre, descripcion, stock, precio_inventario
             FROM producto
             WHERE stock <= @umbral AND id NOT IN (
                 SELECT id_producto
@@ -327,9 +327,13 @@ namespace GyG.Presentacion
                     p.id, 
                     pr.nombre AS proveedor, 
                     p.estado, 
-                    p.fecha_solicitud
+                    p.fecha_solicitud,
+                    COALESCE(SUM(pd.precio_compra * pd.cantidad), 0) AS total_precio_compra,
+                    COALESCE(SUM(pd.precio_venta * pd.cantidad), 0) AS total_precio_venta
                 FROM pedido p
                 JOIN proveedor pr ON p.id_proveedor = pr.id
+                LEFT JOIN pedido_detalle pd ON pd.id_pedido = p.id
+                GROUP BY p.id, pr.nombre, p.estado, p.fecha_solicitud
                 ORDER BY 
                     CASE WHEN p.estado = 'solicitado' THEN 0 ELSE 1 END,
                     p.fecha_solicitud DESC";
@@ -341,7 +345,6 @@ namespace GyG.Presentacion
                         adapter.Fill(dt);
                         dgvPedidos.DataSource = dt;
 
-                        // Evita duplicar columnas si ya existen
                         if (!dgvPedidos.Columns.Contains("actualizarEstado"))
                         {
                             var colActualizar = new DataGridViewButtonColumn
@@ -363,8 +366,6 @@ namespace GyG.Presentacion
             }
         }
 
-
-
         private void ConfigurarGridPedidos()
         {
             dgvPedidos.AutoGenerateColumns = false;
@@ -375,7 +376,7 @@ namespace GyG.Presentacion
                 Name = "id",
                 DataPropertyName = "id",
                 HeaderText = "ID",
-                Visible = false
+                Visible = true
             });
 
             dgvPedidos.Columns.Add(new DataGridViewTextBoxColumn
@@ -391,15 +392,33 @@ namespace GyG.Presentacion
                 Name = "estado",
                 DataPropertyName = "estado",
                 HeaderText = "Estado",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
             });
 
             dgvPedidos.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "fecha_creacion",
-                DataPropertyName = "fecha_creacion",
+                Name = "fecha_solicitud",
+                DataPropertyName = "fecha_solicitud",
                 HeaderText = "Fecha",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+            });
+
+            dgvPedidos.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "total_precio_compra",
+                DataPropertyName = "total_precio_compra",
+                HeaderText = "Precio Compra",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } // formato moneda
+            });
+
+            dgvPedidos.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "total_precio_venta",
+                DataPropertyName = "total_precio_venta",
+                HeaderText = "Precio Venta",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } // formato moneda
             });
         }
 
@@ -507,20 +526,21 @@ namespace GyG.Presentacion
                         // Insertar los detalles del pedido para cada producto seleccionado
                         foreach (DataRow producto in productosSeleccionados.Rows)
                         {
+                            int cantidad = PedirCantidad(producto["nombre"].ToString());
+
                             using (var cmd = new NpgsqlCommand(@"
-                        INSERT INTO pedido_detalle (id_pedido, id_producto, cantidad, precio_compra, precio_venta)
-                        VALUES (@id_pedido, @id_producto, @cantidad, @precio_compra, @precio_venta)", conn))
+        INSERT INTO pedido_detalle (id_pedido, id_producto, cantidad, precio_compra, precio_venta)
+        VALUES (@id_pedido, @id_producto, @cantidad, @precio_compra, @precio_venta)", conn))
                             {
                                 cmd.Parameters.AddWithValue("@id_pedido", idPedido);
                                 cmd.Parameters.AddWithValue("@id_producto", (int)producto["id"]);
-                                cmd.Parameters.AddWithValue("@cantidad",
-                                    10); // Aquí puedes cambiar la cantidad o pedirla al usuario
+                                cmd.Parameters.AddWithValue("@cantidad", cantidad);
                                 cmd.Parameters.AddWithValue("@precio_compra", (decimal)producto["precio_inventario"]);
-                                cmd.Parameters.AddWithValue("@precio_venta",
-                                    (decimal)producto["precio_inventario"] * 1.25m);
+                                cmd.Parameters.AddWithValue("@precio_venta", (decimal)producto["precio_inventario"] * 1.25m);
                                 cmd.ExecuteNonQuery();
                             }
                         }
+
 
                         transaction.Commit();
                         MessageBox.Show("Pedido generado correctamente.");
@@ -532,5 +552,23 @@ namespace GyG.Presentacion
                 MessageBox.Show("Error al generar el pedido: " + ex.Message);
             }
         }
+        
+        private int PedirCantidad(string nombreProducto)
+        {
+            string input = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Ingrese la cantidad para el producto '{nombreProducto}':", 
+                "Cantidad Producto", "1");
+
+            if (int.TryParse(input, out int cantidad) && cantidad > 0)
+            {
+                return cantidad;
+            }
+            else
+            {
+                MessageBox.Show("Cantidad inválida. Se usará cantidad 1 por defecto.");
+                return 1;
+            }
+        }
+
     }
 }
