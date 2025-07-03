@@ -17,6 +17,7 @@ namespace GyG.Presentacion
         private List<ProductoCarrito> carrito = new List<ProductoCarrito>();
         private Label lblItemsCarrito;
         private Label lblInfoEditarCantidad;
+        private Label lblStockProducto;
 
         
         public VentasForm()
@@ -36,11 +37,19 @@ namespace GyG.Presentacion
             lblInfoEditarCantidad.ForeColor = Color.DarkBlue;
             lblInfoEditarCantidad.Font = new Font("Segoe UI", 9F, FontStyle.Italic);
             lblInfoEditarCantidad.Text = "💡 Para editar la cantidad: doble clic en la celda, cambie el número y presione ENTER.";
-            lblInfoEditarCantidad.Location = new Point(10, dgvCarrito.Top - 30); // Ajusta según tu diseño
+            lblInfoEditarCantidad.Location = new Point(120, dgvCarrito.Top - 30); 
 
+            lblStockProducto = new Label();
+            lblStockProducto.AutoSize = true;
+            lblStockProducto.ForeColor = Color.DarkRed;
+            lblStockProducto.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            lblStockProducto.Location = new Point(120, 5); 
+            
             // Agregar los labels al formulario
             this.Controls.Add(lblItemsCarrito);
             this.Controls.Add(lblInfoEditarCantidad);
+            this.Controls.Add(lblStockProducto);
+            
             CargarProductos();
             CargarClientes();
             ConfigurarColumnasCarrito();
@@ -66,7 +75,9 @@ namespace GyG.Presentacion
                         Descripcion = reader.GetString(2), // descripcion
                         Categoria = reader.IsDBNull(3) ? null : reader.GetString(3), // categoria
                         PrecioVenta = reader.GetDecimal(4), // precio_venta
-                        Stock = reader.GetInt32(5) // stock
+                        Stock = reader.GetInt32(5), // stock
+                        IVA = reader.IsDBNull(6) ? 0 : reader.GetDecimal(6),
+                        Descuento = reader.IsDBNull(7) ? 0 : reader.GetDecimal(7)
                     });
                 }
             }
@@ -102,15 +113,15 @@ namespace GyG.Presentacion
                 txtDescripcion.Text = producto.Descripcion;
                 txtPrecio.Text = producto.PrecioVenta.ToString("F2");
 
-                // Ejemplo valores por defecto o puedes traer desde la BD si los tienes
-                numIVA.Value = 15; // 15% IVA
-                numDescuento.Value = 5; // 5% descuento por defecto
+                numIVA.Value = producto.IVA;
+                numDescuento.Value = producto.Descuento;
+
+                lblStockProducto.Text = $"Stock disponible: {producto.Stock}";
 
                 CalcularPrecioFinal();
             }
             else
             {
-                // Limpiar campos
                 txtDescripcion.Clear();
                 txtPrecio.Clear();
                 numIVA.Value = 0;
@@ -146,6 +157,12 @@ namespace GyG.Presentacion
                     return;
                 }
 
+                if (numCantidad.Value > producto.Stock)
+                {
+                    MessageBox.Show("No hay suficiente stock para este producto.", "Stock insuficiente");
+                    return;
+                }
+
                 // Aquí va el bloque para verificar si ya existe y actualizar o agregar nuevo
                 var existente = carrito.FirstOrDefault(c => c.Id == producto.Id);
                 if (existente != null)
@@ -173,6 +190,48 @@ namespace GyG.Presentacion
             }
         }
 
+
+        private void txtNombreCliente_TextChanged(object sender, EventArgs e)
+        {
+            AutoCompleteStringCollection nombres = new AutoCompleteStringCollection();
+
+            using (var conn = Conexion.ObtenerConexion())
+            using (var cmd = new NpgsqlCommand("SELECT nombre FROM cliente WHERE nombre ILIKE @nombre", conn))
+            {
+                cmd.Parameters.AddWithValue("nombre", "%" + txtNombreCliente.Text + "%");
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        nombres.Add(reader.GetString(0));
+                    }
+                }
+            }
+
+            txtNombreCliente.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            txtNombreCliente.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            txtNombreCliente.AutoCompleteCustomSource = nombres;
+        }
+
+        
+        private void txtNombreCliente_Leave(object sender, EventArgs e)
+        {
+            using (var conn = Conexion.ObtenerConexion())
+            using (var cmd = new NpgsqlCommand("SELECT telefono, ubicacion FROM cliente WHERE nombre = @nombre", conn))
+            {
+                cmd.Parameters.AddWithValue("nombre", txtNombreCliente.Text.Trim());
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        txtTelefono.Text = reader.GetString(0);
+                        txtUbicacion.Text = reader.IsDBNull(1) ? "" : reader.GetString(1);
+                    }
+                }
+            }
+        }
 
 
         // Cuando cambie valor en una celda editable (cantidad)
@@ -451,6 +510,8 @@ namespace GyG.Presentacion
         public string Categoria { get; set; }
         public decimal PrecioVenta { get; set; }
         public int Stock { get; set; }
+        public decimal IVA { get; set; }         
+        public decimal Descuento { get; set; }
 
         public override string ToString() => Nombre;
     }
