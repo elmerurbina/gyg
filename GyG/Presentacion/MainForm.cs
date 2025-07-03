@@ -39,6 +39,7 @@ namespace GyG.Presentacion
                 "Pedidos" => new PedidosForm(),
                 "Contabilidad" => new ContabilidadForm(),
                 "Gráficos" => new GraficosForm(),
+                "Clientes" => new ClienteForm(),
                 _ => null
             };
 

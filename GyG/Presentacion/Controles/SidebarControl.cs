@@ -20,7 +20,7 @@ namespace GyG.Presentacion.Controles
         private void InicializarSidebar()
         {
             string[] opciones = {
-                "Inventario", "Ventas", "Proformas", "Pedidos", "Contabilidad", "Gráficos"
+                "Inventario", "Ventas", "Proformas", "Pedidos", "Contabilidad", "Gráficos",  "Clientes" 
             };
 
             int top = 20;
