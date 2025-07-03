@@ -45,6 +45,18 @@ namespace GyG.Presentacion
             lblStockProducto.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             lblStockProducto.Location = new Point(120, 5); 
             
+            
+            Button btnEditarCliente = new Button();
+            btnEditarCliente.Text = "Modificar información del cliente";
+            btnEditarCliente.Location = new Point(420, 1);
+            btnEditarCliente.BackColor = Color.LightGoldenrodYellow;
+            btnEditarCliente.Width = 220;
+            btnEditarCliente.Height = 28;
+            btnEditarCliente.Click += BtnEditarCliente_Click;
+
+            this.Controls.Add(btnEditarCliente);
+
+            
             // Agregar los labels al formulario
             this.Controls.Add(lblItemsCarrito);
             this.Controls.Add(lblInfoEditarCantidad);
@@ -105,6 +117,25 @@ namespace GyG.Presentacion
                 txtTelefono.AutoCompleteCustomSource = telefonos;
             }
         }
+        
+        private void BtnEditarCliente_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtTelefono.Text))
+            {
+                MessageBox.Show("Debe seleccionar un cliente existente antes de modificar.", "Advertencia");
+                return;
+            }
+
+            var form = new ClienteForm(txtNombreCliente.Text, txtTelefono.Text, txtUbicacion.Text);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                // Recargar datos si es necesario
+                CargarClientes();
+                txtNombreCliente_Leave(null, null); // Actualiza campos si hubo cambios
+            }
+        }
+
+
 
         private void cbProductos_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -193,6 +224,9 @@ namespace GyG.Presentacion
 
         private void txtNombreCliente_TextChanged(object sender, EventArgs e)
         {
+            if (txtNombreCliente.Text.Length < 2)
+                return;
+
             AutoCompleteStringCollection nombres = new AutoCompleteStringCollection();
 
             using (var conn = Conexion.ObtenerConexion())
@@ -213,7 +247,7 @@ namespace GyG.Presentacion
             txtNombreCliente.AutoCompleteSource = AutoCompleteSource.CustomSource;
             txtNombreCliente.AutoCompleteCustomSource = nombres;
         }
-
+        
         
         private void txtNombreCliente_Leave(object sender, EventArgs e)
         {

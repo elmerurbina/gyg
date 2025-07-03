@@ -137,25 +137,21 @@ namespace GyG.Presentacion
             this.txtSubtotal.ReadOnly = true;
             this.txtSubtotal.Size = new Size(150, 22);
 
-            lblNombreCliente.Text = "Nombre Cliente:";
-            lblNombreCliente.Location = new Point(400, 10);
-            lblNombreCliente.AutoSize = true;
+           
 
-            this.txtNombreCliente.Location = new Point(400, 30);
+            this.txtNombreCliente.Location = new Point(400, 33);
+            this.txtNombreCliente.PlaceholderText = "Nombre Cliente";
             this.txtNombreCliente.Size = new Size(250, 22);
 
-            lblTelefono.Text = "Teléfono:";
-            lblTelefono.Location = new Point(400, 60);
-            lblTelefono.AutoSize = true;
+            
 
-            this.txtTelefono.Location = new Point(400, 80);
+            this.txtTelefono.Location = new Point(400, 83);
+            this.txtTelefono.PlaceholderText = "Teléfono";
             this.txtTelefono.Size = new Size(250, 22);
+            
 
-            lblUbicacion.Text = "Ubicación:";
-            lblUbicacion.Location = new Point(400, 110);
-            lblUbicacion.AutoSize = true;
-
-            this.txtUbicacion.Location = new Point(400, 130);
+            this.txtUbicacion.Location = new Point(400, 133);
+            this.txtUbicacion.PlaceholderText = "Ubicación";
             this.txtUbicacion.Size = new Size(250, 22);
 
             // Buttons with enough width
