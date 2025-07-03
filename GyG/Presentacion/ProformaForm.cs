@@ -128,14 +128,12 @@ public partial class ProformaForm : Form
 
         using (var conn = Conexion.ObtenerConexion())
         using (var cmd = new NpgsqlCommand(@"
-            SELECT p.id, c.nombre, p.fecha, p.total, a.nombre_archivo,
-                   CASE WHEN f.id IS NULL THEN 'Pendiente' ELSE 'Venta completada' END as estado
-            FROM proforma p
-            JOIN cliente c ON p.id_cliente = c.id
-            LEFT JOIN factura f ON f.id = p.id
-            LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id_relacionado = p.id
+            SELECT p.id, c.nombre, p.fecha, p.total, a.nombre_archivo, p.estado
+FROM proforma p
+JOIN cliente c ON p.id_cliente = c.id
+LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id_relacionado = p.id
+ORDER BY p.fecha DESC;
 
-            ORDER BY p.fecha DESC;
         ", conn))
         using (var reader = cmd.ExecuteReader())
         {
@@ -161,12 +159,13 @@ public partial class ProformaForm : Form
                 }
 
                 var cellCompletar = (DataGridViewButtonCell)dgvProformas.Rows[rowIndex].Cells["CompletarVenta"];
-                if (estado == "Venta completada")
+                if (estado == "Finalizada")
                 {
                     cellCompletar.Value = "Venta Completa";
                     cellCompletar.Style.ForeColor = Color.Gray;
                     cellCompletar.ReadOnly = true;
                 }
+
             }
         }
     }
@@ -268,6 +267,11 @@ public partial class ProformaForm : Form
                             cmdStock.Parameters.AddWithValue("id_producto", item.Id);
                             cmdStock.ExecuteNonQuery();
                         }
+                        using (var cmdEstado = new NpgsqlCommand("UPDATE proforma SET estado = 'Finalizada' WHERE id = @id;", conn))
+                        {
+                            cmdEstado.Parameters.AddWithValue("@id", idProforma);
+                            cmdEstado.ExecuteNonQuery();
+                        }
                     }
                 }
 
@@ -276,7 +280,10 @@ public partial class ProformaForm : Form
             }
 
             MessageBox.Show("Venta registrada exitosamente desde proforma.");
+
         }
+        
+        
         catch (Exception ex)
         {
             MessageBox.Show("Error al completar la venta: " + ex.Message);

@@ -54,6 +54,12 @@
       <Compile Update="Presentacion\HistorialFacturasForm.cs">
         <SubType>Form</SubType>
       </Compile>
+      <Compile Update="Presentacion\AgregarForm.cs">
+        <SubType>Form</SubType>
+      </Compile>
+      <Compile Update="Presentacion\ProveedoresForm.cs">
+        <SubType>Form</SubType>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
