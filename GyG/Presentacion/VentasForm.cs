@@ -454,11 +454,27 @@ namespace GyG.Presentacion
                 return;
             }
 
-            int idCliente = ObtenerORegistrarCliente(txtNombreCliente.Text.Trim(), txtTelefono.Text.Trim(),
+            int idCliente = ObtenerORegistrarCliente(
+                txtNombreCliente.Text.Trim(),
+                txtTelefono.Text.Trim(),
                 txtUbicacion.Text.Trim());
+
             decimal total = carrito.Sum(c => c.Subtotal);
             decimal descuento = carrito.Sum(c => c.PrecioUnitario * (c.Descuento / 100));
-            var detalles = JsonSerializer.Serialize(carrito);
+
+            // Serializar carrito en formato esperado por el SP
+            var detallesJson = JsonSerializer.Serialize(
+                carrito.Select(c => new
+                {
+                    id = c.Id,
+                    cantidad = c.Cantidad,
+                    precioUnitario = c.PrecioUnitario,
+                    IVA = c.IVA,
+                    Descuento = c.Descuento
+                })
+            );
+
+            int idFacturaGenerada;
 
             using (var conn = Conexion.ObtenerConexion())
             using (var cmd = new NpgsqlCommand(
@@ -468,13 +484,33 @@ namespace GyG.Presentacion
                 cmd.Parameters.AddWithValue("estado_pago", estadoPago);
                 cmd.Parameters.AddWithValue("total", total);
                 cmd.Parameters.AddWithValue("descuento", descuento);
-                cmd.Parameters.AddWithValue("detalles", detalles);
+                cmd.Parameters.AddWithValue("detalles", detallesJson);
 
-                cmd.ExecuteNonQuery();
+                // Obtener el ID de la factura generada
+                idFacturaGenerada = Convert.ToInt32(cmd.ExecuteScalar());
+                // Después de registrar la factura...
+                foreach (var item in carrito)
+                {
+                    using (var cmdStock = new NpgsqlCommand(
+                               "UPDATE producto SET stock = stock - @cantidad WHERE id = @id_producto;", conn))
+                    {
+                        cmdStock.Parameters.AddWithValue("cantidad", item.Cantidad);
+                        cmdStock.Parameters.AddWithValue("id_producto", item.Id);
+                        cmdStock.ExecuteNonQuery();
+                    }
+                }
+
             }
 
             MessageBox.Show("Venta registrada exitosamente. No se puede modificar.", "Venta registrada");
-            LimpiarProductoSeleccionado();
+
+            // Generar y guardar factura en PDF
+            using (var conn = Conexion.ObtenerConexion())
+            {
+                GenerarYGuardarPDFFactura(idFacturaGenerada, conn.ConnectionString);
+            }
+
+            LimpiarTodo(); // Limpia carrito, cliente, etc.
         }
 
         private void btnGenerarProforma_Click(object sender, EventArgs e)
@@ -661,6 +697,169 @@ namespace GyG.Presentacion
         }
     }
 }
+
+   
+   
+   public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
+{
+    byte[] pdfBytes;
+
+    using (MemoryStream ms = new MemoryStream())
+    {
+        iTextDocument doc = new iTextDocument(iTextPageSize.A4, 50, 50, 50, 50);
+        iTextPdfWriter writer = iTextPdfWriter.GetInstance(doc, ms);
+        doc.Open();
+
+        // Cabecera
+        var titulo = new iTextParagraph("FERRETERÍA GyG\nFACTURA",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
+        titulo.Alignment = iTextElement.ALIGN_CENTER;
+        doc.Add(titulo);
+
+        doc.Add(new iTextParagraph(" ")); // Espacio
+
+        // Obtener info del cliente y productos
+        string clienteNombre = "", telefonoCliente = "", fecha = "";
+        decimal total = 0;
+        DataTable productos = new DataTable();
+
+        using (var conn = new NpgsqlConnection(connectionString))
+        {
+            conn.Open();
+
+            using (var cmd = new NpgsqlCommand(@"
+                SELECT c.nombre, c.telefono, f.total, f.fecha
+                FROM factura f
+                JOIN cliente c ON f.id_cliente = c.id
+                WHERE f.id = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", idFactura);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        clienteNombre = reader.GetString(0);
+                        telefonoCliente = reader.GetString(1);
+                        total = reader.GetDecimal(2);
+                        fecha = reader.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+                    }
+                }
+            }
+
+            using (var da = new NpgsqlDataAdapter(@"
+                SELECT 
+        prod.nombre AS producto,
+        prod.descripcion,
+        d.cantidad,
+        d.precio_unitario,
+        prod.iva,
+        prod.descuento,
+        d.subtotal
+    FROM factura_detalle d
+    JOIN producto prod ON d.id_producto = prod.id
+    WHERE d.id_factura = @id", conn))
+            {
+                da.SelectCommand.Parameters.AddWithValue("@id", idFactura);
+                da.Fill(productos);
+            }
+        }
+
+        // Encabezado cliente
+        doc.Add(new iTextParagraph($"N° Factura: {idFactura}"));
+        doc.Add(new iTextParagraph($"Cliente: {clienteNombre}"));
+        doc.Add(new iTextParagraph($"Teléfono: {telefonoCliente}"));
+        doc.Add(new iTextParagraph($"Fecha: {fecha}"));
+        doc.Add(new iTextParagraph(" "));
+
+        // Tabla
+        iTextPdfPTable table = new iTextPdfPTable(7);
+        table.WidthPercentage = 100;
+        table.SetWidths(new float[] { 20, 25, 10, 10, 10, 10, 15 });
+
+        table.AddCell("Producto");
+        table.AddCell("Descripción");
+        table.AddCell("Cant.");
+        table.AddCell("Precio");
+        table.AddCell("IVA");
+        table.AddCell("Desc.");
+        table.AddCell("Subtotal");
+
+        foreach (DataRow row in productos.Rows)
+        {
+            decimal precio = Convert.ToDecimal(row["precio_unitario"]);
+            int cantidad = Convert.ToInt32(row["cantidad"]);
+            decimal iva = Convert.ToDecimal(row["iva"]);
+            decimal descuento = Convert.ToDecimal(row["descuento"]);
+            decimal subtotal = Convert.ToDecimal(row["subtotal"]);
+
+            table.AddCell(row["producto"].ToString());
+            table.AddCell(row["descripcion"].ToString());
+            table.AddCell(cantidad.ToString());
+            table.AddCell($"${precio:F2}");
+            table.AddCell($"{iva}%");
+            table.AddCell($"{descuento}%");
+            table.AddCell($"${subtotal:F2}");
+        }
+
+        doc.Add(table);
+        doc.Add(new iTextParagraph(" "));
+
+        // Total
+        doc.Add(new iTextParagraph($"TOTAL: ${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
+        doc.Add(new iTextParagraph(" "));
+
+        // Firmas alineadas
+        iTextPdfPTable firmaTable = new iTextPdfPTable(2);
+        firmaTable.WidthPercentage = 100;
+        firmaTable.SetWidths(new float[] { 50, 50 });
+
+        firmaTable.AddCell(new PdfPCell(new iTextParagraph("Entregué Conforme: ____________________________"))
+        {
+            Border = iTextRectangle.NO_BORDER,
+            HorizontalAlignment = iTextElement.ALIGN_LEFT
+        });
+
+        firmaTable.AddCell(new PdfPCell(new iTextParagraph("Recibí Conforme: ____________________________"))
+        {
+            Border = iTextRectangle.NO_BORDER,
+            HorizontalAlignment = iTextElement.ALIGN_RIGHT
+        });
+
+        doc.Add(firmaTable);
+
+        doc.Add(new iTextParagraph(" "));
+        doc.Add(new iTextParagraph("Gracias por su compra.",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_OBLIQUE, 12)));
+
+        doc.Close();
+        pdfBytes = ms.ToArray();
+    }
+
+    // Guardar en BD y abrir archivo
+    using (var conn = new NpgsqlConnection(connectionString))
+    {
+        conn.Open();
+        using (var cmd = new NpgsqlCommand(@"
+            INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido)
+            VALUES (@nombre, @tipo, @contenido)", conn))
+        {
+            cmd.Parameters.AddWithValue("@nombre", $"factura_{idFactura}.pdf");
+            cmd.Parameters.AddWithValue("@tipo", "factura");
+            cmd.Parameters.AddWithValue("@contenido", pdfBytes);
+            cmd.ExecuteNonQuery();
+        }
+
+        string nombreArchivo = $"factura_{idFactura}.pdf";
+        string rutaTemporal = Path.Combine(Path.GetTempPath(), nombreArchivo);
+        File.WriteAllBytes(rutaTemporal, pdfBytes);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+        {
+            FileName = rutaTemporal,
+            UseShellExecute = true
+        });
+    }
+}
+
 
 
         private void LimpiarTodo()
