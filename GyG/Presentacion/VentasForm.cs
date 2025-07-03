@@ -361,7 +361,7 @@ namespace GyG.Presentacion
 
             using (var conn = Conexion.ObtenerConexion())
             using (var cmd = new NpgsqlCommand(
-                       "SELECT sp_insert_factura(@id_cliente, @estado_pago, @total, @descuento, @detalles);", conn))
+                       "SELECT sp_insert_factura(@id_cliente, @estado_pago, @total, @descuento, @detalles::json);", conn))
             {
                 cmd.Parameters.AddWithValue("id_cliente", idCliente);
                 cmd.Parameters.AddWithValue("estado_pago", estadoPago);
