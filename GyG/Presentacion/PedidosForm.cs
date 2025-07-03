@@ -5,6 +5,9 @@ using System.Linq;
 using System.Windows.Forms;
 using Npgsql;
 using GyG.Datos;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+using System.IO;
 
 namespace GyG.Presentacion
 {
@@ -204,14 +207,90 @@ namespace GyG.Presentacion
             }
         }
 
+        
+        
+private void GenerarPDFPedido(int idPedido, DataTable productos, string nombreProveedor, NpgsqlConnection conn)
+{
+    string nombreArchivo = $"pedido_{idPedido}.pdf";
+    string rutaTemp = Path.Combine(Path.GetTempPath(), nombreArchivo);
+
+    Document doc = new Document(PageSize.A4);
+    using (var fs = new FileStream(rutaTemp, FileMode.Create, FileAccess.Write, FileShare.None))
+    {
+        PdfWriter writer = PdfWriter.GetInstance(doc, fs);
+        doc.Open();
+
+        doc.Add(new Paragraph("FERRETERÍA G Y G"));
+        doc.Add(new Paragraph($"Pedido N°: {idPedido}"));
+        doc.Add(new Paragraph($"Fecha: {DateTime.Now.ToShortDateString()}"));
+        doc.Add(new Paragraph($"Proveedor: {nombreProveedor}"));
+        doc.Add(new Paragraph(" "));
+
+        PdfPTable table = new PdfPTable(5);
+        table.WidthPercentage = 100;
+        table.AddCell("Producto");
+        table.AddCell("Descripción");
+        table.AddCell("Cantidad");
+        table.AddCell("Precio Compra");
+        table.AddCell("Precio Venta");
+
+        foreach (DataRow row in productos.Rows)
+        {
+            table.AddCell(row["nombre"].ToString());
+            table.AddCell(row["descripcion"].ToString());
+            table.AddCell(row["cantidad"].ToString());
+            table.AddCell(Convert.ToDecimal(row["precio_compra"]).ToString("C2"));
+            table.AddCell(Convert.ToDecimal(row["precio_venta"]).ToString("C2"));
+        }
+
+        doc.Add(table);
+
+        doc.Add(new Paragraph(" "));
+        doc.Add(new Paragraph("__________________________"));
+        doc.Add(new Paragraph("Firma de Recepción"));
+        doc.Close();
+    }
+
+    // Guardar en base de datos
+    byte[] pdfBytes = File.ReadAllBytes(rutaTemp);
+
+    string query = @"
+        INSERT INTO archivo_pdf (tipo, nombre_archivo, contenido)
+        VALUES ('pedido', @nombre, @contenido)";
+    using (var cmd = new NpgsqlCommand(query, conn))
+    {
+        cmd.Parameters.AddWithValue("@nombre", nombreArchivo);
+        cmd.Parameters.AddWithValue("@contenido", pdfBytes);
+        cmd.ExecuteNonQuery();
+    }
+}
+      
+        
         private void dgvPedidos_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0 && dgvPedidos.Columns[e.ColumnIndex].Name == "verPDF")
+            if (e.RowIndex >= 0)
             {
-                int idPedido = Convert.ToInt32(dgvPedidos.Rows[e.RowIndex].Cells["id"].Value);
-                AbrirPDFPedido(idPedido);
+                // Ver PDF
+                if (dgvPedidos.Columns[e.ColumnIndex].Name == "verPDF")
+                {
+                    int idPedido = Convert.ToInt32(dgvPedidos.Rows[e.RowIndex].Cells["id"].Value);
+                    AbrirPDFPedido(idPedido);
+                }
+
+                // Actualizar Estado del Pedido
+                if (dgvPedidos.Columns[e.ColumnIndex].Name == "actualizarEstado")
+                {
+                    int idPedido = Convert.ToInt32(dgvPedidos.Rows[e.RowIndex].Cells["id"].Value);
+                    DialogResult result = MessageBox.Show("¿Deseas marcar este pedido como recibido y actualizar el stock?", 
+                        "Confirmar recepción", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (result == DialogResult.Yes)
+                    {
+                        ActualizarEstadoPedido(idPedido);
+                    }
+                }
             }
         }
+
 
 
         private void CargarProductos(int umbral)
@@ -474,85 +553,111 @@ namespace GyG.Presentacion
             }
         }
 
-        private void btnGenerarPedido_Click(object sender, EventArgs e)
+       private void btnGenerarPedido_Click(object sender, EventArgs e)
+{
+    // Validar que al menos un producto esté seleccionado
+    if (dgvProductos.SelectedRows.Count == 0)
+    {
+        MessageBox.Show("Seleccione al menos un producto para generar el pedido.");
+        return;
+    }
+
+    // Validar proveedor
+    if (cmbProveedores.SelectedValue == null)
+    {
+        MessageBox.Show("Seleccione un proveedor.");
+        return;
+    }
+
+    int idProveedor = (int)cmbProveedores.SelectedValue;
+
+    // Crear tabla temporal con columnas necesarias
+    DataTable productosSeleccionados = new DataTable();
+    productosSeleccionados.Columns.Add("id", typeof(int));
+    productosSeleccionados.Columns.Add("nombre", typeof(string));
+    productosSeleccionados.Columns.Add("descripcion", typeof(string));
+    productosSeleccionados.Columns.Add("stock", typeof(int));
+    productosSeleccionados.Columns.Add("precio_inventario", typeof(decimal));
+    productosSeleccionados.Columns.Add("cantidad", typeof(int));
+    productosSeleccionados.Columns.Add("precio_compra", typeof(decimal));
+    productosSeleccionados.Columns.Add("precio_venta", typeof(decimal));
+
+    try
+    {
+        using (var conn = Conexion.ObtenerConexion())
         {
-            // Validar que al menos un producto esté seleccionado
-            if (dgvProductos.SelectedRows.Count == 0)
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+
+            using (var transaction = conn.BeginTransaction())
             {
-                MessageBox.Show("Seleccione al menos un producto para generar el pedido.");
-                return;
-            }
+                int idPedido;
 
-            // Validar que haya un proveedor seleccionado
-            if (cmbProveedores.SelectedValue == null)
-            {
-                MessageBox.Show("Seleccione un proveedor.");
-                return;
-            }
-
-            int idProveedor = (int)cmbProveedores.SelectedValue;
-
-            // Crear una tabla temporal para guardar los productos seleccionados
-            DataTable productosSeleccionados = ((DataTable)dgvProductos.DataSource).Clone();
-
-            // Copiar cada fila seleccionada a la tabla temporal
-            foreach (DataGridViewRow row in dgvProductos.SelectedRows)
-            {
-                if (row.DataBoundItem is DataRowView drv)
+                // Insertar pedido principal
+                using (var cmd = new NpgsqlCommand(
+                    "INSERT INTO pedido (id_proveedor, estado) VALUES (@prov, 'solicitado') RETURNING id", conn))
                 {
-                    productosSeleccionados.ImportRow(drv.Row);
+                    cmd.Parameters.AddWithValue("@prov", idProveedor);
+                    idPedido = (int)cmd.ExecuteScalar();
                 }
-            }
 
-            try
-            {
-                using (var conn = Conexion.ObtenerConexion())
+                // Insertar detalles y construir la tabla para PDF
+                foreach (DataGridViewRow row in dgvProductos.SelectedRows)
                 {
-                    if (conn.State != System.Data.ConnectionState.Open)
-                        conn.Open();
-
-                    using (var transaction = conn.BeginTransaction())
+                    if (row.DataBoundItem is DataRowView drv)
                     {
-                        // Insertar el pedido
-                        int idPedido;
-                        using (var cmd = new NpgsqlCommand(
-                                   "INSERT INTO pedido (id_proveedor, estado) VALUES (@prov, 'solicitado') RETURNING id",
-                                   conn))
+                        int idProducto = (int)drv["id"];
+                        string nombre = drv["nombre"].ToString();
+                        string descripcion = drv["descripcion"].ToString();
+                        int stock = Convert.ToInt32(drv["stock"]);
+                        decimal precioInventario = Convert.ToDecimal(drv["precio_inventario"]);
+
+                        int cantidad = PedirCantidad(nombre);
+                        decimal precioCompra = precioInventario;
+                        decimal precioVenta = precioCompra * 1.25m;
+
+                        // Insertar detalle
+                        using (var cmd = new NpgsqlCommand(@"
+                            INSERT INTO pedido_detalle (id_pedido, id_producto, cantidad, precio_compra, precio_venta)
+                            VALUES (@id_pedido, @id_producto, @cantidad, @precio_compra, @precio_venta)", conn))
                         {
-                            cmd.Parameters.AddWithValue("@prov", idProveedor);
-                            idPedido = (int)cmd.ExecuteScalar();
+                            cmd.Parameters.AddWithValue("@id_pedido", idPedido);
+                            cmd.Parameters.AddWithValue("@id_producto", idProducto);
+                            cmd.Parameters.AddWithValue("@cantidad", cantidad);
+                            cmd.Parameters.AddWithValue("@precio_compra", precioCompra);
+                            cmd.Parameters.AddWithValue("@precio_venta", precioVenta);
+                            cmd.ExecuteNonQuery();
                         }
 
-                        // Insertar los detalles del pedido para cada producto seleccionado
-                        foreach (DataRow producto in productosSeleccionados.Rows)
-                        {
-                            int cantidad = PedirCantidad(producto["nombre"].ToString());
-
-                            using (var cmd = new NpgsqlCommand(@"
-        INSERT INTO pedido_detalle (id_pedido, id_producto, cantidad, precio_compra, precio_venta)
-        VALUES (@id_pedido, @id_producto, @cantidad, @precio_compra, @precio_venta)", conn))
-                            {
-                                cmd.Parameters.AddWithValue("@id_pedido", idPedido);
-                                cmd.Parameters.AddWithValue("@id_producto", (int)producto["id"]);
-                                cmd.Parameters.AddWithValue("@cantidad", cantidad);
-                                cmd.Parameters.AddWithValue("@precio_compra", (decimal)producto["precio_inventario"]);
-                                cmd.Parameters.AddWithValue("@precio_venta", (decimal)producto["precio_inventario"] * 1.25m);
-                                cmd.ExecuteNonQuery();
-                            }
-                        }
-
-
-                        transaction.Commit();
-                        MessageBox.Show("Pedido generado correctamente.");
+                        // Agregar fila para el PDF
+                        DataRow nueva = productosSeleccionados.NewRow();
+                        nueva["id"] = idProducto;
+                        nueva["nombre"] = nombre;
+                        nueva["descripcion"] = descripcion;
+                        nueva["stock"] = stock;
+                        nueva["precio_inventario"] = precioInventario;
+                        nueva["cantidad"] = cantidad;
+                        nueva["precio_compra"] = precioCompra;
+                        nueva["precio_venta"] = precioVenta;
+                        productosSeleccionados.Rows.Add(nueva);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al generar el pedido: " + ex.Message);
+
+                transaction.Commit();
+
+                // Generar PDF y guardar
+                GenerarPDFPedido(idPedido, productosSeleccionados, cmbProveedores.Text, conn);
+                MessageBox.Show("Pedido generado correctamente.");
+                CargarHistorialPedidos();
             }
         }
-        
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Error al generar el pedido: " + ex.Message);
+    }
+}
+
         private int PedirCantidad(string nombreProducto)
         {
             string input = Microsoft.VisualBasic.Interaction.InputBox(
