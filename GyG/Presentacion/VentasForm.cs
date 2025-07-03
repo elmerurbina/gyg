@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using GyG.Datos;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
+using iTextSharp.text.pdf.draw;
 using iTextDocument = iTextSharp.text.Document;
 using iTextParagraph = iTextSharp.text.Paragraph;
 using iTextFontFactory = iTextSharp.text.FontFactory;
@@ -502,8 +503,17 @@ namespace GyG.Presentacion
 
             }
 
-            MessageBox.Show("Venta registrada exitosamente. No se puede modificar.", "Venta registrada");
+            MessageBox.Show("Venta registrada exitosamente.", "Venta registrada");
 
+            if (cbProductos.SelectedItem is Producto productoSeleccionado)
+            {
+                int nuevoStock = ObtenerStockProducto(productoSeleccionado.Id);
+                lblStockProducto.Text = $"Stock disponible: {nuevoStock}";
+
+                // También, actualizar el objeto Producto del ComboBox para reflejar nuevo stock
+                productoSeleccionado.Stock = nuevoStock;
+            }
+            
             // Generar y guardar factura en PDF
             using (var conn = Conexion.ObtenerConexion())
             {
@@ -512,6 +522,24 @@ namespace GyG.Presentacion
 
             LimpiarTodo(); // Limpia carrito, cliente, etc.
         }
+        
+        
+        
+        private int ObtenerStockProducto(int idProducto)
+        {
+            using (var conn = Conexion.ObtenerConexion())
+            using (var cmd = new NpgsqlCommand("SELECT stock FROM producto WHERE id = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("id", idProducto);
+                var result = cmd.ExecuteScalar();
+                if (result != null && int.TryParse(result.ToString(), out int stock))
+                {
+                    return stock;
+                }
+                return 0;
+            }
+        }
+
 
         private void btnGenerarProforma_Click(object sender, EventArgs e)
         {
@@ -700,7 +728,7 @@ namespace GyG.Presentacion
 
    
    
-   public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
+  public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
 {
     byte[] pdfBytes;
 
@@ -748,16 +776,16 @@ namespace GyG.Presentacion
 
             using (var da = new NpgsqlDataAdapter(@"
                 SELECT 
-        prod.nombre AS producto,
-        prod.descripcion,
-        d.cantidad,
-        d.precio_unitario,
-        prod.iva,
-        prod.descuento,
-        d.subtotal
-    FROM factura_detalle d
-    JOIN producto prod ON d.id_producto = prod.id
-    WHERE d.id_factura = @id", conn))
+                    prod.nombre AS producto,
+                    prod.descripcion,
+                    d.cantidad,
+                    d.precio_unitario,
+                    prod.iva,
+                    prod.descuento,
+                    d.subtotal
+                FROM factura_detalle d
+                JOIN producto prod ON d.id_producto = prod.id
+                WHERE d.id_factura = @id", conn))
             {
                 da.SelectCommand.Parameters.AddWithValue("@id", idFactura);
                 da.Fill(productos);
@@ -808,25 +836,34 @@ namespace GyG.Presentacion
         doc.Add(new iTextParagraph($"TOTAL: ${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
         doc.Add(new iTextParagraph(" "));
 
-        // Firmas alineadas
-        iTextPdfPTable firmaTable = new iTextPdfPTable(2);
-        firmaTable.WidthPercentage = 100;
-        firmaTable.SetWidths(new float[] { 50, 50 });
+        // Dibujo de líneas de firma y texto debajo usando PdfContentByte
+        PdfContentByte cb = writer.DirectContent;
+        float yLinea = doc.BottomMargin + 50;
+        float anchoLinea = 60;
 
-        firmaTable.AddCell(new PdfPCell(new iTextParagraph("Entregué Conforme: ____________________________"))
-        {
-            Border = iTextRectangle.NO_BORDER,
-            HorizontalAlignment = iTextElement.ALIGN_LEFT
-        });
+        // Línea izquierda: Entregué Conforme
+        float xEntregue = doc.LeftMargin;
+        cb.MoveTo(xEntregue, yLinea);
+        cb.LineTo(xEntregue + anchoLinea, yLinea);
+        cb.Stroke();
 
-        firmaTable.AddCell(new PdfPCell(new iTextParagraph("Recibí Conforme: ____________________________"))
-        {
-            Border = iTextRectangle.NO_BORDER,
-            HorizontalAlignment = iTextElement.ALIGN_RIGHT
-        });
+        // Línea derecha: Recibí Conforme
+        float xRecibi = doc.PageSize.Width - doc.RightMargin - anchoLinea;
+        cb.MoveTo(xRecibi, yLinea);
+        cb.LineTo(xRecibi + anchoLinea, yLinea);
+        cb.Stroke();
 
-        doc.Add(firmaTable);
+        // Texto debajo de las líneas
+        BaseFont bf = BaseFont.CreateFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
+        cb.BeginText();
+        cb.SetFontAndSize(bf, 10);
 
+        cb.ShowTextAligned(Element.ALIGN_CENTER, "Entregué Conforme", xEntregue + anchoLinea / 2, yLinea - 12, 0);
+        cb.ShowTextAligned(Element.ALIGN_CENTER, "Recibí Conforme", xRecibi + anchoLinea / 2, yLinea - 12, 0);
+
+        cb.EndText();
+
+        // Mensaje final
         doc.Add(new iTextParagraph(" "));
         doc.Add(new iTextParagraph("Gracias por su compra.",
             iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_OBLIQUE, 12)));
