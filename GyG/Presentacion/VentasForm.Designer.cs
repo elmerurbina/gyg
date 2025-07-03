@@ -129,7 +129,7 @@ namespace GyG.Presentacion
             this.numCantidad.Value = 1;
             this.numCantidad.Size = new Size(100, 22);
 
-            lblSubtotal.Text = "Subtotal:";
+            lblSubtotal.Text = "Precio Final:";
             lblSubtotal.Location = new Point(150, 160);
             lblSubtotal.AutoSize = true;
 
