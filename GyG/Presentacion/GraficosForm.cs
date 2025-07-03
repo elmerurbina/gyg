@@ -11,6 +11,11 @@ namespace GyG.Presentacion
 {
     public partial class GraficosForm : Form
     {
+        private int paginaActualGraficos = 0;
+        private const int graficosPorPagina = 4;
+
+        // Array con todos los gráficos
+        private Chart[] todosGraficos;
         
         private int paginaActualRentabilidad = 0;
         private int productosPorPaginaRentabilidad = 10;
@@ -19,6 +24,27 @@ namespace GyG.Presentacion
         public GraficosForm()
         {
             InitializeComponent();
+            todosGraficos = new Chart[]
+            {
+                chartMasVendidos,
+                chartMenosVendidos,
+                chartRentabilidad,
+                chartHistorialVentas,
+                chartClientesMayoresCompras,
+                chartClientesContado,
+                chartFechasMasVentas
+            };
+
+            // Asignar eventos a botones
+            btnAnteriorPagina.Click += btnAnteriorPagina_Click;
+            btnSiguientePagina.Click += btnSiguientePagina_Click;
+
+            // Mostrar la primera página
+            MostrarPaginaGraficos(paginaActualGraficos);
+
+            // Carga inicial de datos en gráficos (tu código original)
+            CargarDatosGraficos();
+        
             // Botón Anterior
             Button btnAnteriorRentabilidad = new Button
             {
@@ -47,9 +73,65 @@ namespace GyG.Presentacion
             CargarProductosMenosVendidos();
             CargarRentabilidadProductos();
             CargarProyeccionHistorialVentas();
+            CargarClientesMayoresCompras();
+            CargarClientesPagosContado();
+            CargarFechasConMasVentas();
             
         }
 
+        private void MostrarPaginaGraficos(int pagina)
+        {
+            int totalGraficos = todosGraficos.Length;
+            int start = pagina * graficosPorPagina;
+            int end = Math.Min(start + graficosPorPagina, totalGraficos);
+
+            // Ocultar todos inicialmente
+            foreach (var chart in todosGraficos)
+            {
+                chart.Visible = false;
+            }
+
+            // Mostrar sólo los gráficos de la página actual, y reposicionarlos
+            for (int i = start; i < end; i++)
+            {
+                todosGraficos[i].Visible = true;
+
+                // Posiciones para 2 columnas y 2 filas por página
+                int indexPagina = i - start;
+                int fila = indexPagina / 2;
+                int columna = indexPagina % 2;
+
+                int posX = 10 + columna * 470; // 470 es ancho de gráfico + margen
+                int posY = 10 + fila * 270;    // 270 es alto de gráfico + margen
+
+                todosGraficos[i].Location = new System.Drawing.Point(posX, posY);
+            }
+
+            // Opcional: activar/desactivar botones si estás en primera o última página
+            btnAnteriorPagina.Enabled = pagina > 0;
+            btnSiguientePagina.Enabled = end < totalGraficos;
+        }
+
+        private void btnAnteriorPagina_Click(object sender, EventArgs e)
+        {
+            if (paginaActualGraficos > 0)
+            {
+                paginaActualGraficos--;
+                MostrarPaginaGraficos(paginaActualGraficos);
+            }
+        }
+
+        private void btnSiguientePagina_Click(object sender, EventArgs e)
+        {
+            int maxPaginas = (int)Math.Ceiling((double)todosGraficos.Length / graficosPorPagina);
+            if (paginaActualGraficos < maxPaginas - 1)
+            {
+                paginaActualGraficos++;
+                MostrarPaginaGraficos(paginaActualGraficos);
+            }
+        }
+    
+        
         private void CargarProductosMasVendidos()
         {
             try
@@ -170,6 +252,141 @@ namespace GyG.Presentacion
             MostrarPaginaRentabilidad(paginaActualRentabilidad);
         }
 
+        private void CargarClientesMayoresCompras()
+        {
+            try
+            {
+                using var conn = Conexion.ObtenerConexion();
+                var cmd = new NpgsqlCommand(@"
+            SELECT c.nombre, SUM(f.total) AS total_compras
+            FROM factura f
+            JOIN cliente c ON f.id_cliente = c.id
+            GROUP BY c.nombre
+            ORDER BY total_compras DESC
+            LIMIT 5;", conn);
+
+                using var reader = cmd.ExecuteReader();
+                var nombres = new List<string>();
+                var totales = new List<decimal>();
+
+                while (reader.Read())
+                {
+                    nombres.Add(reader.GetString(0));
+                    totales.Add(reader.GetDecimal(1));
+                }
+
+                chartClientesMayoresCompras.Series.Clear();
+                var series = new Series("Clientes")
+                {
+                    ChartType = SeriesChartType.Column,
+                    Color = Color.DarkCyan
+                };
+                for (int i = 0; i < nombres.Count; i++)
+                {
+                    series.Points.AddXY(nombres[i], totales[i]);
+                }
+
+                chartClientesMayoresCompras.Series.Add(series);
+                chartClientesMayoresCompras.ChartAreas[0].AxisX.Interval = 1;
+                chartClientesMayoresCompras.ChartAreas[0].AxisX.LabelStyle.Angle = -45;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error cargando clientes con mayores compras: " + ex.Message);
+            }
+        }
+
+        
+        private void CargarClientesPagosContado()
+        {
+            try
+            {
+                using var conn = Conexion.ObtenerConexion();
+                var cmd = new NpgsqlCommand(@"
+            SELECT c.nombre, COUNT(*) AS num_compras_contado
+            FROM factura f
+            JOIN cliente c ON f.id_cliente = c.id
+            WHERE f.estado_pago = 'contado'
+            GROUP BY c.nombre
+            ORDER BY num_compras_contado DESC
+            LIMIT 5;", conn);
+
+                using var reader = cmd.ExecuteReader();
+                var nombres = new List<string>();
+                var conteos = new List<int>();
+
+                while (reader.Read())
+                {
+                    nombres.Add(reader.GetString(0));
+                    conteos.Add(reader.GetInt32(1));
+                }
+
+                chartClientesContado.Series.Clear();
+                var series = new Series("Pagos Contado")
+                {
+                    ChartType = SeriesChartType.Column,
+                    Color = Color.OrangeRed
+                };
+                for (int i = 0; i < nombres.Count; i++)
+                {
+                    series.Points.AddXY(nombres[i], conteos[i]);
+                }
+
+                chartClientesContado.Series.Add(series);
+                chartClientesContado.ChartAreas[0].AxisX.Interval = 1;
+                chartClientesContado.ChartAreas[0].AxisX.LabelStyle.Angle = -45;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error cargando clientes que pagan al contado: " + ex.Message);
+            }
+        }
+
+        
+        private void CargarFechasConMasVentas()
+        {
+            try
+            {
+                using var conn = Conexion.ObtenerConexion();
+                var cmd = new NpgsqlCommand(@"
+            SELECT fecha::date AS dia, SUM(total) AS total_ventas
+            FROM factura
+            GROUP BY dia
+            ORDER BY total_ventas DESC
+            LIMIT 10;", conn);
+
+                using var reader = cmd.ExecuteReader();
+                var fechas = new List<string>();
+                var totales = new List<decimal>();
+
+                while (reader.Read())
+                {
+                    fechas.Add(reader.GetDateTime(0).ToString("yyyy-MM-dd"));
+                    totales.Add(reader.GetDecimal(1));
+                }
+
+                chartFechasMasVentas.Series.Clear();
+                var series = new Series("Ventas por Día")
+                {
+                    ChartType = SeriesChartType.Column,
+                    Color = Color.MediumPurple
+                };
+                for (int i = 0; i < fechas.Count; i++)
+                {
+                    series.Points.AddXY(fechas[i], totales[i]);
+                }
+
+                chartFechasMasVentas.Series.Add(series);
+                chartFechasMasVentas.ChartAreas[0].AxisX.Interval = 1;
+                chartFechasMasVentas.ChartAreas[0].AxisX.LabelStyle.Angle = -45;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error cargando fechas con más ventas: " + ex.Message);
+            }
+        }
+
+        
         private void MostrarPaginaRentabilidad(int pagina)
         {
             if (listaRentabilidadCompleta == null || listaRentabilidadCompleta.Count == 0)
