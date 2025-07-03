@@ -25,6 +25,10 @@ namespace GyG.Presentacion
            
             InitializeComponent();
             
+            txtNombreCliente.Leave += txtNombreCliente_Leave;
+            txtNombreCliente.KeyDown += TxtNombreCliente_KeyDown;
+
+            
             lblItemsCarrito = new Label();
             lblItemsCarrito.AutoSize = true;
             lblItemsCarrito.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
@@ -105,16 +109,33 @@ namespace GyG.Presentacion
             using (var cmd = new NpgsqlCommand("SELECT * FROM sp_get_clientes();", conn))
             using (var reader = cmd.ExecuteReader())
             {
+                AutoCompleteStringCollection nombres = new AutoCompleteStringCollection();
                 AutoCompleteStringCollection telefonos = new AutoCompleteStringCollection();
 
                 while (reader.Read())
                 {
-                    telefonos.Add(reader.GetString(2));
+                    nombres.Add(reader.GetString(1));    // Nombre
+                    telefonos.Add(reader.GetString(2));  // Teléfono
                 }
+
+                txtNombreCliente.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+                txtNombreCliente.AutoCompleteSource = AutoCompleteSource.CustomSource;
+                txtNombreCliente.AutoCompleteCustomSource = nombres;
 
                 txtTelefono.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
                 txtTelefono.AutoCompleteSource = AutoCompleteSource.CustomSource;
                 txtTelefono.AutoCompleteCustomSource = telefonos;
+            }
+        }
+
+        private void TxtNombreCliente_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                // Llamar la función que rellena teléfono y ubicación
+                txtNombreCliente_Leave(sender, EventArgs.Empty);
+                e.Handled = true;
+                e.SuppressKeyPress = true; // Evitar sonido 'ding'
             }
         }
         
@@ -222,31 +243,6 @@ namespace GyG.Presentacion
         }
 
 
-        private void txtNombreCliente_TextChanged(object sender, EventArgs e)
-        {
-            if (txtNombreCliente.Text.Length < 2)
-                return;
-
-            AutoCompleteStringCollection nombres = new AutoCompleteStringCollection();
-
-            using (var conn = Conexion.ObtenerConexion())
-            using (var cmd = new NpgsqlCommand("SELECT nombre FROM cliente WHERE nombre ILIKE @nombre", conn))
-            {
-                cmd.Parameters.AddWithValue("nombre", "%" + txtNombreCliente.Text + "%");
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        nombres.Add(reader.GetString(0));
-                    }
-                }
-            }
-
-            txtNombreCliente.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
-            txtNombreCliente.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            txtNombreCliente.AutoCompleteCustomSource = nombres;
-        }
         
         
         private void txtNombreCliente_Leave(object sender, EventArgs e)
@@ -500,28 +496,22 @@ namespace GyG.Presentacion
         private int ObtenerORegistrarCliente(string nombre, string telefono, string ubicacion)
         {
             using (var conn = Conexion.ObtenerConexion())
-            using (var cmd = new NpgsqlCommand("SELECT id FROM cliente WHERE telefono = @telefono", conn))
             {
-                cmd.Parameters.AddWithValue("telefono", telefono);
-                object result = cmd.ExecuteScalar();
-
-                if (result != null)
+                // Llama siempre al procedimiento almacenado
+                using (var insertCmd = new NpgsqlCommand("SELECT sp_insert_cliente(@nombre, @telefono, @ubicacion);", conn))
                 {
-                    return (int)result;
+                    insertCmd.Parameters.AddWithValue("nombre", nombre);
+                    insertCmd.Parameters.AddWithValue("telefono", telefono);
+                    insertCmd.Parameters.AddWithValue("ubicacion",
+                        string.IsNullOrWhiteSpace(ubicacion) ? DBNull.Value : ubicacion);
+                    insertCmd.ExecuteNonQuery();
                 }
-                else
-                {
-                    using (var insertCmd =
-                           new NpgsqlCommand("SELECT sp_insert_cliente(@nombre, @telefono, @ubicacion);", conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("nombre", nombre);
-                        insertCmd.Parameters.AddWithValue("telefono", telefono);
-                        insertCmd.Parameters.AddWithValue("ubicacion",
-                            string.IsNullOrWhiteSpace(ubicacion) ? DBNull.Value : ubicacion);
-                        insertCmd.ExecuteNonQuery();
-                    }
 
-                    return ObtenerORegistrarCliente(nombre, telefono, ubicacion); // Recursive fetch
+                // Luego obtén el ID del cliente actualizado o recién creado
+                using (var cmd = new NpgsqlCommand("SELECT id FROM cliente WHERE telefono = @telefono;", conn))
+                {
+                    cmd.Parameters.AddWithValue("telefono", telefono);
+                    return (int)cmd.ExecuteScalar();
                 }
             }
         }
