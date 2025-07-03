@@ -275,26 +275,35 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
         {
             if (e.RowIndex >= 0)
             {
-                // Ver PDF
-                if (dgvPedidos.Columns[e.ColumnIndex].Name == "verPDF")
-                {
-                    int idPedido = Convert.ToInt32(dgvPedidos.Rows[e.RowIndex].Cells["id"].Value);
-                    AbrirPDFPedido(idPedido);
-                }
-
-                // Actualizar Estado del Pedido
                 if (dgvPedidos.Columns[e.ColumnIndex].Name == "actualizarEstado")
                 {
+                    string estado = dgvPedidos.Rows[e.RowIndex].Cells["estado"].Value?.ToString().ToLower();
+
+                    if (estado == "recibido")
+                    {
+                        MessageBox.Show("Este pedido ya está marcado como recibido.", "Información",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return; // No permitir acción
+                    }
+
                     int idPedido = Convert.ToInt32(dgvPedidos.Rows[e.RowIndex].Cells["id"].Value);
-                    DialogResult result = MessageBox.Show("¿Deseas marcar este pedido como recibido y actualizar el stock?", 
+                    DialogResult result = MessageBox.Show("¿Deseas marcar este pedido como recibido y actualizar el stock?",
                         "Confirmar recepción", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result == DialogResult.Yes)
                     {
                         ActualizarEstadoPedido(idPedido);
                     }
                 }
+
+                // Código para abrir PDF...
+                if (dgvPedidos.Columns[e.ColumnIndex].Name == "verPDF")
+                {
+                    int idPedido = Convert.ToInt32(dgvPedidos.Rows[e.RowIndex].Cells["id"].Value);
+                    AbrirPDFPedido(idPedido);
+                }
             }
         }
+
 
 
 
@@ -401,12 +410,12 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
 
 
         private void CargarHistorialPedidos()
+{
+    try
+    {
+        using (var conn = Conexion.ObtenerConexion())
         {
-            try
-            {
-                using (var conn = Conexion.ObtenerConexion())
-                {
-                    string query = @"
+            string query = @"
                 SELECT 
                     p.id, 
                     pr.nombre AS proveedor, 
@@ -422,33 +431,63 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
                     CASE WHEN p.estado = 'solicitado' THEN 0 ELSE 1 END,
                     p.fecha_solicitud DESC";
 
-                    using (var cmd = new NpgsqlCommand(query, conn))
-                    using (var adapter = new NpgsqlDataAdapter(cmd))
-                    {
-                        DataTable dt = new DataTable();
-                        adapter.Fill(dt);
-                        dgvPedidos.DataSource = dt;
+            using (var cmd = new NpgsqlCommand(query, conn))
+            using (var adapter = new NpgsqlDataAdapter(cmd))
+            {
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                dgvPedidos.DataSource = dt;
 
-                        if (!dgvPedidos.Columns.Contains("actualizarEstado"))
+                if (!dgvPedidos.Columns.Contains("actualizarEstado"))
+                {
+                    var colActualizar = new DataGridViewButtonColumn
+                    {
+                        Name = "actualizarEstado",
+                        HeaderText = "Actualizar Estado",
+                        Text = "Recibir",
+                        UseColumnTextForButtonValue = true,
+                        AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                    };
+                    dgvPedidos.Columns.Add(colActualizar);
+                }
+
+                // Ahora recorremos las filas para deshabilitar el botón en pedidos ya recibidos
+                foreach (DataGridViewRow row in dgvPedidos.Rows)
+                {
+                    string estado = row.Cells["estado"].Value?.ToString().ToLower();
+
+                    if (estado == "recibido")
+                    {
+                        // Cambiar el texto del botón para indicar que ya fue recibido
+                        var btnCell = row.Cells["actualizarEstado"] as DataGridViewButtonCell;
+                        if (btnCell != null)
                         {
-                            var colActualizar = new DataGridViewButtonColumn
-                            {
-                                Name = "actualizarEstado",
-                                HeaderText = "Actualizar Estado",
-                                Text = "Recibir",
-                                UseColumnTextForButtonValue = true,
-                                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
-                            };
-                            dgvPedidos.Columns.Add(colActualizar);
+                            btnCell.Value = "Recibido";
+                            // Opcional: cambiar estilo para que parezca deshabilitado
+                            btnCell.Style.ForeColor = Color.Gray;
+                            btnCell.Style.SelectionForeColor = Color.Gray;
+                        }
+                    }
+                    else
+                    {
+                        // Por si acaso, aseguramos que el botón tenga texto "Recibir"
+                        var btnCell = row.Cells["actualizarEstado"] as DataGridViewButtonCell;
+                        if (btnCell != null)
+                        {
+                            btnCell.Value = "Recibir";
+                            btnCell.Style.ForeColor = Color.Black;
+                            btnCell.Style.SelectionForeColor = Color.Black;
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al cargar historial de pedidos: " + ex.Message);
-            }
         }
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Error al cargar historial de pedidos: " + ex.Message);
+    }
+}
 
         private void ConfigurarGridPedidos()
         {
