@@ -144,68 +144,73 @@ namespace GyG.Presentacion
         }
 
 
-        private void ActualizarEstadoPedido(int idPedido)
+   private void ActualizarEstadoPedido(int idPedido)
+{
+    try
+    {
+        using (var conn = Conexion.ObtenerConexion())
         {
-            try
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+
+            using (var transaction = conn.BeginTransaction())
             {
-                using (var conn = Conexion.ObtenerConexion())
-                {
-                    conn.Open();
-                    using (var transaction = conn.BeginTransaction())
-                    {
-                        // 1. Actualizar estado y fecha del pedido
-                        string updatePedidoQuery = @"
+                // 1. Actualizar estado y fecha del pedido
+                string updatePedidoQuery = @"
                     UPDATE pedido 
                     SET estado = 'recibido', fecha_recibido = CURRENT_TIMESTAMP 
                     WHERE id = @id";
-                        using (var cmdUpdate = new NpgsqlCommand(updatePedidoQuery, conn))
-                        {
-                            cmdUpdate.Parameters.AddWithValue("@id", idPedido);
-                            cmdUpdate.ExecuteNonQuery();
-                        }
+                using (var cmdUpdate = new NpgsqlCommand(updatePedidoQuery, conn, transaction))
+                {
+                    cmdUpdate.Parameters.AddWithValue("@id", idPedido);
+                    cmdUpdate.ExecuteNonQuery();
+                }
 
-                        // 2. Obtener productos y cantidades del pedido
-                        string detalleQuery = @"
+                // 2. Leer todos los productos del pedido en memoria
+                DataTable detalles = new DataTable();
+                string detalleQuery = @"
                     SELECT id_producto, cantidad 
                     FROM pedido_detalle 
                     WHERE id_pedido = @id";
-                        using (var cmdDetalle = new NpgsqlCommand(detalleQuery, conn))
-                        {
-                            cmdDetalle.Parameters.AddWithValue("@id", idPedido);
-                            using (var reader = cmdDetalle.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    int idProducto = reader.GetInt32(0);
-                                    int cantidad = reader.GetInt32(1);
-
-                                    // 3. Sumar cantidad al stock
-                                    string updateStockQuery = @"
-                                UPDATE producto 
-                                SET stock = stock + @cantidad 
-                                WHERE id = @id_producto";
-                                    using (var cmdStock = new NpgsqlCommand(updateStockQuery, conn))
-                                    {
-                                        cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
-                                        cmdStock.Parameters.AddWithValue("@id_producto", idProducto);
-                                        cmdStock.ExecuteNonQuery();
-                                    }
-                                }
-                            }
-                        }
-
-                        transaction.Commit();
+                using (var cmdDetalle = new NpgsqlCommand(detalleQuery, conn, transaction))
+                {
+                    cmdDetalle.Parameters.AddWithValue("@id", idPedido);
+                    using (var reader = cmdDetalle.ExecuteReader())
+                    {
+                        detalles.Load(reader); // ← Lee todo en memoria y cierra reader
                     }
                 }
 
-                MessageBox.Show("Pedido actualizado a 'recibido' y stock actualizado.");
-                CargarHistorialPedidos(); // Recarga el grid actualizado
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al actualizar el pedido y el stock: " + ex.Message);
+                // 3. Actualizar stock por cada producto
+                foreach (DataRow row in detalles.Rows)
+                {
+                    int idProducto = Convert.ToInt32(row["id_producto"]);
+                    int cantidad = Convert.ToInt32(row["cantidad"]);
+
+                    string updateStockQuery = @"
+                        UPDATE producto 
+                        SET stock = stock + @cantidad 
+                        WHERE id = @id_producto";
+                    using (var cmdStock = new NpgsqlCommand(updateStockQuery, conn, transaction))
+                    {
+                        cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
+                        cmdStock.Parameters.AddWithValue("@id_producto", idProducto);
+                        cmdStock.ExecuteNonQuery();
+                    }
+                }
+
+                transaction.Commit();
             }
         }
+
+        MessageBox.Show("Pedido actualizado a 'recibido' y stock actualizado.");
+        CargarHistorialPedidos(); // Recarga el grid actualizado
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Error al actualizar el pedido y el stock: " + ex.Message);
+    }
+}
 
         
         

@@ -25,6 +25,7 @@ namespace GyG.Presentacion
             this.lblProveedor = new System.Windows.Forms.Label();
             this.lblProveedores = new System.Windows.Forms.Label();
             this.lblProductos = new System.Windows.Forms.Label();
+            this.lblProductoInfo = new System.Windows.Forms.Label();
             this.btnManejarProveedores = new System.Windows.Forms.Button();
             this.lblInfoSeleccionMultiple = new System.Windows.Forms.Label();
 
@@ -146,6 +147,16 @@ namespace GyG.Presentacion
             this.lblProductos.Size = new System.Drawing.Size(86, 23);
             this.lblProductos.TabIndex = 9;
             this.lblProductos.Text = "Productos";
+            
+            //lblArchivoInfo
+            this.lblProductoInfo.AutoSize = true;
+            this.lblProductoInfo.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblProductoInfo.Location = new System.Drawing.Point(220, 50);
+            this.lblProductoInfo.Name = "lblProductoInfo";
+            this.lblProductoInfo.ForeColor = System.Drawing.Color.Blue;
+            this.lblProductoInfo.Size = new System.Drawing.Size(86, 23);
+            this.lblProductoInfo.Font = new Font("Segoe UI", 8F, FontStyle.Regular);
+            this.lblProductoInfo.Text = "⚠️ Para abrir el archivo PDF de un pedido, dar doble click en la celda.";
 
             // 
             // dgvProductos
@@ -192,6 +203,7 @@ namespace GyG.Presentacion
             this.Controls.Add(this.lblInfoSeleccionMultiple);
             this.Controls.Add(this.dgvProductos);
             this.Controls.Add(this.lblProductos);
+            this.Controls.Add(this.lblProductoInfo);
             this.Controls.Add(this.dgvPedidos);
             this.Controls.Add(this.lblProveedores);
             this.Controls.Add(this.btnGenerarPedido);
@@ -221,6 +233,7 @@ namespace GyG.Presentacion
         private System.Windows.Forms.Label lblProveedor;
         private System.Windows.Forms.Label lblProveedores;
         private System.Windows.Forms.Label lblProductos;
+        private System.Windows.Forms.Label lblProductoInfo;
         private System.Windows.Forms.Button btnManejarProveedores;
         private System.Windows.Forms.Label lblInfoSeleccionMultiple;
     }
