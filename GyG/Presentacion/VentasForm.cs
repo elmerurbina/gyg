@@ -6,7 +6,19 @@ using System.Linq;
 using System.Text.Json;
 using System.Windows.Forms;
 using GyG.Datos;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+using iTextDocument = iTextSharp.text.Document;
+using iTextParagraph = iTextSharp.text.Paragraph;
+using iTextFontFactory = iTextSharp.text.FontFactory;
+using iTextPdfWriter = iTextSharp.text.pdf.PdfWriter;
+using iTextPdfPTable = iTextSharp.text.pdf.PdfPTable;
+using iTextPageSize = iTextSharp.text.PageSize;
+using iTextElement = iTextSharp.text.Element;
+using iTextRectangle = iTextSharp.text.Rectangle;
 using Npgsql;
+using Document = System.Reflection.Metadata.Document;
+using Font = System.Drawing.Font;
 
 namespace GyG.Presentacion
 {
@@ -462,7 +474,7 @@ namespace GyG.Presentacion
             }
 
             MessageBox.Show("Venta registrada exitosamente. No se puede modificar.", "Venta registrada");
-            LimpiarTodo();
+            LimpiarProductoSeleccionado();
         }
 
         private void btnGenerarProforma_Click(object sender, EventArgs e)
@@ -479,19 +491,28 @@ namespace GyG.Presentacion
             decimal descuento = carrito.Sum(c => c.PrecioUnitario * (c.Descuento / 100));
             var detalles = JsonSerializer.Serialize(carrito);
 
+            int idProformaGenerada;
+
             using (var conn = Conexion.ObtenerConexion())
-            using (var cmd = new NpgsqlCommand("SELECT sp_insert_proforma(@id_cliente, @total, @descuento, @detalles);",
-                       conn))
+            using (var cmd = new NpgsqlCommand("SELECT sp_insert_proforma(@id_cliente, @total, @descuento, @detalles::json);", conn))
             {
                 cmd.Parameters.AddWithValue("id_cliente", idCliente);
                 cmd.Parameters.AddWithValue("total", total);
                 cmd.Parameters.AddWithValue("descuento", descuento);
                 cmd.Parameters.AddWithValue("detalles", detalles);
-                cmd.ExecuteNonQuery();
+                idProformaGenerada = Convert.ToInt32(cmd.ExecuteScalar());  // Asegúrate que el SP retorna el ID
             }
 
-            MessageBox.Show("Proforma generada correctamente.", "Proforma");
+            // ✅ Usa la conexión directamente con el método que ya tienes
+            using (var conn = Conexion.ObtenerConexion())
+            {
+                GenerarYGuardarPDFProforma(idProformaGenerada, conn.ConnectionString);
+            }
+
+            MessageBox.Show("Proforma generada correctamente y PDF guardado.", "Proforma");
+            LimpiarTodo();
         }
+
 
         private int ObtenerORegistrarCliente(string nombre, string telefono, string ubicacion)
         {
@@ -515,6 +536,132 @@ namespace GyG.Presentacion
                 }
             }
         }
+
+
+
+   public void GenerarYGuardarPDFProforma(int idProforma, string connectionString)
+{
+    byte[] pdfBytes;
+
+    using (MemoryStream ms = new MemoryStream())
+    {
+        iTextDocument doc = new iTextDocument(iTextPageSize.A4, 50, 50, 50, 50);
+        iTextPdfWriter writer = iTextPdfWriter.GetInstance(doc, ms);
+        doc.Open();
+
+        // Cabecera
+        var titulo = new iTextParagraph("Ferretería GyG\nPROFORMA",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
+        titulo.Alignment = iTextElement.ALIGN_CENTER;
+        doc.Add(titulo);
+
+        doc.Add(new iTextParagraph(" ")); // espacio
+
+        // Obtener info del cliente y productos
+        string clienteNombre = "";
+        string fecha = "";
+        decimal total = 0;
+
+        DataTable productos = new DataTable();
+
+        using (var conn = new NpgsqlConnection(connectionString))
+        {
+            conn.Open();
+
+            // Info general proforma y cliente
+            using (var cmd = new NpgsqlCommand(@"
+                SELECT c.nombre, p.total, p.fecha
+                FROM proforma p
+                JOIN cliente c ON p.id_cliente = c.id
+                WHERE p.id = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", idProforma);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        clienteNombre = reader.GetString(0);
+                        total = reader.GetDecimal(1);
+                        fecha = reader.GetDateTime(2).ToString("dd/MM/yyyy HH:mm");
+                    }
+                }
+            }
+
+            // Productos con descripción incluida
+            using (var da = new NpgsqlDataAdapter(@"
+                SELECT prod.nombre AS producto, prod.descripcion, d.cantidad, d.precio_unitario, d.subtotal
+                FROM proforma_detalle d
+                JOIN producto prod ON d.id_producto = prod.id
+                WHERE d.id_proforma = @id", conn))
+            {
+                da.SelectCommand.Parameters.AddWithValue("@id", idProforma);
+                da.Fill(productos);
+            }
+        }
+
+        // Datos generales
+        doc.Add(new iTextParagraph($"N° Proforma: {idProforma}"));
+        doc.Add(new iTextParagraph($"Cliente: {clienteNombre}"));
+        doc.Add(new iTextParagraph($"Fecha: {fecha}"));
+        doc.Add(new iTextParagraph(" "));
+
+        // Tabla con descripción
+        iTextPdfPTable table = new iTextPdfPTable(5);
+        table.WidthPercentage = 100;
+        table.SetWidths(new float[] { 30, 35, 12, 12, 13 }); // Ajusta como prefieras
+
+        table.AddCell("Producto");
+        table.AddCell("Descripción");
+        table.AddCell("Cantidad");
+        table.AddCell("Precio Unitario");
+        table.AddCell("Subtotal");
+
+        foreach (DataRow row in productos.Rows)
+        {
+            table.AddCell(row["producto"].ToString());
+            table.AddCell(row["descripcion"].ToString());
+            table.AddCell(row["cantidad"].ToString());
+            table.AddCell("$" + Convert.ToDecimal(row["precio_unitario"]).ToString("F2"));
+            table.AddCell("$" + Convert.ToDecimal(row["subtotal"]).ToString("F2"));
+        }
+
+        doc.Add(table);
+
+        // Total
+        doc.Add(new iTextParagraph(" "));
+        doc.Add(new iTextParagraph($"TOTAL: ${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
+
+        doc.Close();
+        pdfBytes = ms.ToArray();
+    }
+
+    // Guardar PDF en base de datos
+    using (var conn = new NpgsqlConnection(connectionString))
+    {
+        conn.Open();
+        using (var cmd = new NpgsqlCommand(@"
+            INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido)
+            VALUES (@nombre, @tipo, @contenido)", conn))
+        {
+            cmd.Parameters.AddWithValue("@nombre", $"proforma_{idProforma}.pdf");
+            cmd.Parameters.AddWithValue("@tipo", "proforma");
+            cmd.Parameters.AddWithValue("@contenido", pdfBytes);
+            cmd.ExecuteNonQuery();
+            
+            // Guardar temporalmente el archivo en disco y abrirlo
+            string nombreArchivo = $"proforma_{idProforma}.pdf";
+            string rutaTemporal = Path.Combine(Path.GetTempPath(), nombreArchivo);
+            File.WriteAllBytes(rutaTemporal, pdfBytes);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+            {
+                FileName = rutaTemporal,
+                UseShellExecute = true // Abre con el visor predeterminado
+            });
+
+        }
+    }
+}
+
 
         private void LimpiarTodo()
         {

@@ -25,3 +25,5 @@ C:\Users\elmer\RiderProjects\GyG\GyG\obj\Debug\net8.0-windows\GyG.pdb
 C:\Users\elmer\RiderProjects\GyG\GyG\obj\Debug\net8.0-windows\GyG.genruntimeconfig.cache
 C:\Users\elmer\RiderProjects\GyG\GyG\obj\Debug\net8.0-windows\ref\GyG.dll
 C:\Users\elmer\RiderProjects\GyG\GyG\bin\Debug\net8.0-windows\Newtonsoft.Json.dll
+C:\Users\elmer\RiderProjects\GyG\GyG\bin\Debug\net8.0-windows\BouncyCastle.Cryptography.dll
+C:\Users\elmer\RiderProjects\GyG\GyG\bin\Debug\net8.0-windows\itextsharp.dll
