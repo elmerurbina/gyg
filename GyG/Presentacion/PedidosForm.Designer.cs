@@ -47,6 +47,7 @@ namespace GyG.Presentacion
             this.dgvProveedores.RowHeadersWidth = 51;
             this.dgvProveedores.RowTemplate.Height = 29;
             this.dgvProveedores.Size = new System.Drawing.Size(450, 180);
+            dgvProductos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             this.dgvProveedores.TabIndex = 0;
 
             // 
