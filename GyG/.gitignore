@@ -1,0 +1,56 @@
+# Ignorar archivos binarios y de depuración
+[Bb]in/
+[Oo]bj/
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# Ignorar archivos de usuario y configuración local
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Ignorar resultados de pruebas
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Ignorar paquetes NuGet
+[Nn]uget/
+*.nupkg
+packages/
+
+# Ignorar archivos de ReSharper
+_ReSharper*/
+*.ReSharper
+*.DotSettings.user
+
+# Ignorar archivos de VS Code
+.vscode/
+
+# Ignorar archivos de MSBuild
+*.log
+*.msi
+*.pidb
+
+# Ignorar backups y temporales
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Ignorar archivos de publicación
+publish/
+
+# Ignorar archivos de SQL Server
+*.mdf
+*.ldf
+
+# Ignorar archivos de Rider
+.idea/
+*.sln.iml
+
+# Ignorar archivos de Fody (si se usa)
+FodyWeavers.xml
