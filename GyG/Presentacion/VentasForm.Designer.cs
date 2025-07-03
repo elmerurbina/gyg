@@ -183,8 +183,11 @@ namespace GyG.Presentacion
             this.btnGenerarProforma.Size = new Size(200, 30);
             this.btnGenerarProforma.Click += new System.EventHandler(this.btnGenerarProforma_Click);
 
+            lblInfoEditarCantidad = new System.Windows.Forms.Label();
+            this.Controls.Add(lblInfoEditarCantidad);
+
             // DataGridView dgvCarrito - setup columns para edición y eliminar
-            this.dgvCarrito.Location = new Point(30, 290);
+            this.dgvCarrito.Location = new Point(30, 320);
             this.dgvCarrito.Size = new Size(640, 200);
             this.dgvCarrito.BackgroundColor = Color.White;
             this.dgvCarrito.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
@@ -214,7 +217,7 @@ namespace GyG.Presentacion
             this.dgvCarrito.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.DgvCarrito_CellContentClick);
 
             // Label lblTotal
-            this.lblTotal.Location = new Point(30, 500);
+            this.lblTotal.Location = new Point(30, 525);
             this.lblTotal.Size = new Size(300, 24);
             this.lblTotal.Font = new Font("Arial", 10, FontStyle.Bold);
             this.lblTotal.Text = "Total: $0.00";
@@ -250,7 +253,7 @@ namespace GyG.Presentacion
             // Form properties
             this.Text = "Gestión de Ventas";
             this.BackColor = Color.White;
-            this.Size = new Size(720, 580);
+            this.Size = new Size(720, 680);
 
             ((System.ComponentModel.ISupportInitialize)(this.numIVA)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numDescuento)).EndInit();

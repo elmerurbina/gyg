@@ -12,13 +12,38 @@ namespace GyG.Presentacion
 {
     public partial class VentasForm : Form
     {
-        private List<ProductoCarrito> carrito = new List<ProductoCarrito>();
+        
 
+        private List<ProductoCarrito> carrito = new List<ProductoCarrito>();
+        private Label lblItemsCarrito;
+        private Label lblInfoEditarCantidad;
+
+        
         public VentasForm()
         {
+           
             InitializeComponent();
+            
+            lblItemsCarrito = new Label();
+            lblItemsCarrito.AutoSize = true;
+            lblItemsCarrito.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            lblItemsCarrito.ForeColor = Color.Green;
+            lblItemsCarrito.Location = new Point(10, dgvCarrito.Top - 30); // Ajusta la posición
+
+            // Crear lblInfoEditarCantidad
+            lblInfoEditarCantidad = new Label();
+            lblInfoEditarCantidad.AutoSize = true;
+            lblInfoEditarCantidad.ForeColor = Color.DarkBlue;
+            lblInfoEditarCantidad.Font = new Font("Segoe UI", 9F, FontStyle.Italic);
+            lblInfoEditarCantidad.Text = "💡 Para editar la cantidad: doble clic en la celda, cambie el número y presione ENTER.";
+            lblInfoEditarCantidad.Location = new Point(10, dgvCarrito.Top - 30); // Ajusta según tu diseño
+
+            // Agregar los labels al formulario
+            this.Controls.Add(lblItemsCarrito);
+            this.Controls.Add(lblInfoEditarCantidad);
             CargarProductos();
             CargarClientes();
+            ConfigurarColumnasCarrito();
             numCantidad.ValueChanged += (s, e) => CalcularPrecioFinal();
             numIVA.ValueChanged += (s, e) => CalcularPrecioFinal();
             numDescuento.ValueChanged += (s, e) => CalcularPrecioFinal();
@@ -191,11 +216,21 @@ namespace GyG.Presentacion
             if (dgvCarrito.Columns[e.ColumnIndex].Name == "Eliminar")
             {
                 string nombre = dgvCarrito.Rows[e.RowIndex].Cells["Nombre"].Value.ToString();
-                var producto = carrito.FirstOrDefault(c => c.Nombre == nombre);
-                if (producto != null)
+
+                DialogResult result = MessageBox.Show(
+                    $"¿Está seguro que desea eliminar \"{nombre}\" del carrito?",
+                    "Confirmar eliminación",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
                 {
-                    carrito.Remove(producto);
-                    RefrescarCarrito();
+                    var producto = carrito.FirstOrDefault(c => c.Nombre == nombre);
+                    if (producto != null)
+                    {
+                        carrito.Remove(producto);
+                        RefrescarCarrito();
+                    }
                 }
             }
         }
@@ -205,35 +240,82 @@ namespace GyG.Presentacion
         {
             dgvCarrito.CellValueChanged -= DgvCarrito_CellValueChanged;
             dgvCarrito.CellContentClick -= DgvCarrito_CellContentClick;
+            dgvCarrito.CellEndEdit -= DgvCarrito_CellEndEdit;
 
-            // 🔴 Solución: limpiar columnas para evitar duplicados
-            dgvCarrito.Columns.Clear();
+            dgvCarrito.Rows.Clear();
 
-            // Asignar datos
-            dgvCarrito.DataSource = carrito.Select(c => new
+            foreach (var c in carrito)
             {
-                c.Id,
-                c.Nombre,
-                Descripcion = c.Descripcion ?? "",
-                Precio = c.PrecioUnitario.ToString("C2"),
-                IVA = c.IVA,
-                Descuento = c.Descuento,
-                Cantidad = c.Cantidad,
-                Subtotal = c.Subtotal.ToString("C2")
-            }).ToList();
+                dgvCarrito.Rows.Add(c.Id, c.Nombre, c.Descripcion ?? "", 
+                    c.PrecioUnitario.ToString("C2"),
+                    c.IVA, c.Descuento, c.Cantidad,
+                    c.Subtotal.ToString("C2"));
+            }
 
-            // Ocultar ID si está presente
-            if (dgvCarrito.Columns.Contains("Id"))
-                dgvCarrito.Columns["Id"].Visible = false;
-
-            // Actualizar total
             lblTotal.Text = "Total: " + carrito.Sum(c => c.Subtotal).ToString("C2");
 
+            foreach (DataGridViewRow row in dgvCarrito.Rows)
+            {
+                var cell = row.Cells["Eliminar"] as DataGridViewButtonCell;
+                if (cell != null)
+                {
+                    cell.Style.BackColor = Color.Red;
+                    cell.Style.ForeColor = Color.White;
+                    cell.Style.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                }
+            }
+
+            
+            lblItemsCarrito.Text = $"🛒 {carrito.Sum(c => c.Cantidad)} item(s)";
+
+
+            
             dgvCarrito.CellValueChanged += DgvCarrito_CellValueChanged;
             dgvCarrito.CellContentClick += DgvCarrito_CellContentClick;
+            dgvCarrito.CellEndEdit += DgvCarrito_CellEndEdit;
+        }
+
+        private void ConfigurarColumnasCarrito()
+        {
+            dgvCarrito.Columns.Clear();
+            dgvCarrito.AllowUserToAddRows = false;
+            dgvCarrito.EditMode = DataGridViewEditMode.EditOnEnter;
+
+            dgvCarrito.Columns.Add("Id", "Id");
+            dgvCarrito.Columns["Id"].Visible = false;
+
+            dgvCarrito.Columns.Add("Nombre", "Nombre");
+            dgvCarrito.Columns.Add("Descripcion", "Descripción");
+            dgvCarrito.Columns.Add("Precio", "Precio");
+            dgvCarrito.Columns.Add("IVA", "IVA");
+            dgvCarrito.Columns.Add("Descuento", "Descuento");
+
+            var cantidadCol = new DataGridViewTextBoxColumn
+            {
+                Name = "Cantidad",
+                HeaderText = "Cantidad"
+            };
+            dgvCarrito.Columns.Add(cantidadCol);
+
+            dgvCarrito.Columns.Add("Subtotal", "Subtotal");
+
+            var eliminarBtn = new DataGridViewButtonColumn
+            {
+                Name = "Eliminar",
+                HeaderText = "Acciones",
+                Text = "X",
+                UseColumnTextForButtonValue = true
+            };
+            dgvCarrito.Columns.Add(eliminarBtn);
         }
 
 
+
+
+        private void DgvCarrito_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            DgvCarrito_CellValueChanged(sender, e);
+        }
 
 
         private void LimpiarProductoSeleccionado()
