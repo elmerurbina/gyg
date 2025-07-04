@@ -50,6 +50,8 @@ namespace GyG.Presentacion
 
             if (cbCamaras.Items.Count > 0)
                 cbCamaras.SelectedIndex = 0;
+            
+            btnTerminar.Enabled = false;
 
             btnTerminar.Click += BtnTerminar_Click;
         }
@@ -66,6 +68,8 @@ namespace GyG.Presentacion
             timeoutTimer.Start();
 
             lblEstado.Text = "Escaneando código...";
+            btnIniciar.Enabled = false;
+            btnTerminar.Enabled = true;
         }
 
         private void Capturar(object sender, NewFrameEventArgs eventArgs)
@@ -292,8 +296,18 @@ namespace GyG.Presentacion
             timerEscaneo.Stop();
             timeoutTimer.Stop();
             DetenerCamara();
-            this.Close();
+
+            lblEstado.Text = "Escaneo detenido. Puede volver a iniciarlo o usar ingreso manual.";
+
+            // Reiniciar la imagen de la cámara
+            pbCamara.Image = null;
+            codigoEncontrado = false;
+
+            // Opcional: deshabilitar botón terminar y habilitar iniciar
+            btnTerminar.Enabled = false;
+            btnIniciar.Enabled = true;
         }
+
 
         private void LectorCodigoForm_FormClosing(object sender, FormClosingEventArgs e)
         {
