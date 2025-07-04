@@ -16,7 +16,9 @@ namespace GyG.Presentacion
 
         // Array con todos los gráficos
         private Chart[] todosGraficos;
-        
+        private Button btnAnteriorRentabilidad;
+        private Button btnSiguienteRentabilidad;
+
         private int paginaActualRentabilidad = 0;
         private int productosPorPaginaRentabilidad = 10;
         private List<(string nombre, decimal rentabilidad)> listaRentabilidadCompleta;
@@ -38,6 +40,26 @@ namespace GyG.Presentacion
             // Asignar eventos a botones
             btnAnteriorPagina.Click += btnAnteriorPagina_Click;
             btnSiguientePagina.Click += btnSiguientePagina_Click;
+            
+            btnAnteriorRentabilidad = new Button
+            {
+                Text = "Anterior",
+                Size = new Size(80, 30),
+                Visible = false
+            };
+            btnAnteriorRentabilidad.Click += btnAnteriorRentabilidad_Click;
+            panelGraficosScrollable.Controls.Add(btnAnteriorRentabilidad); // ✅ CORRECTO
+
+            btnSiguienteRentabilidad = new Button
+            {
+                Text = "Siguiente",
+                Size = new Size(80, 30),
+                Visible = false
+            };
+            btnSiguienteRentabilidad.Click += btnSiguienteRentabilidad_Click;
+            panelGraficosScrollable.Controls.Add(btnSiguienteRentabilidad); // ✅ CORRECTO
+
+       
 
             // Mostrar la primera página
             MostrarPaginaGraficos(paginaActualGraficos);
@@ -45,24 +67,7 @@ namespace GyG.Presentacion
             // Carga inicial de datos en gráficos (tu código original)
             CargarDatosGraficos();
         
-            // Botón Anterior
-            Button btnAnteriorRentabilidad = new Button
-            {
-                Text = "Anterior",
-                Location = new Point(chartRentabilidad.Location.X, chartRentabilidad.Location.Y + chartRentabilidad.Height + 10)
-            };
-            btnAnteriorRentabilidad.Click += btnAnteriorRentabilidad_Click;
-            this.Controls.Add(btnAnteriorRentabilidad);
-
-// Botón Siguiente
-            Button btnSiguienteRentabilidad = new Button
-            {
-                Text = "Siguiente",
-                Location = new Point(btnAnteriorRentabilidad.Location.X + btnAnteriorRentabilidad.Width + 10, btnAnteriorRentabilidad.Location.Y)
-            };
-            btnSiguienteRentabilidad.Click += btnSiguienteRentabilidad_Click;
-            this.Controls.Add(btnSiguienteRentabilidad);
-
+           
             CargarDatosGraficos();
             
         }
@@ -71,11 +76,11 @@ namespace GyG.Presentacion
         {
             CargarProductosMasVendidos();
             CargarProductosMenosVendidos();
-            CargarRentabilidadProductos();
             CargarProyeccionHistorialVentas();
             CargarClientesMayoresCompras();
             CargarClientesPagosContado();
             CargarFechasConMasVentas();
+            CargarRentabilidadProductos();
             
         }
 
@@ -85,31 +90,53 @@ namespace GyG.Presentacion
             int start = pagina * graficosPorPagina;
             int end = Math.Min(start + graficosPorPagina, totalGraficos);
 
-            // Ocultar todos inicialmente
+            // Ocultar todos los gráficos
             foreach (var chart in todosGraficos)
-            {
                 chart.Visible = false;
-            }
 
-            // Mostrar sólo los gráficos de la página actual, y reposicionarlos
+            // Mostrar solo los de la página actual
             for (int i = start; i < end; i++)
             {
                 todosGraficos[i].Visible = true;
 
-                // Posiciones para 2 columnas y 2 filas por página
                 int indexPagina = i - start;
                 int fila = indexPagina / 2;
                 int columna = indexPagina % 2;
 
-                int posX = 10 + columna * 470; // 470 es ancho de gráfico + margen
-                int posY = 10 + fila * 270;    // 270 es alto de gráfico + margen
+                int posX = 10 + columna * 470;
+                int posY = 10 + fila * 270;
 
-                todosGraficos[i].Location = new System.Drawing.Point(posX, posY);
+                todosGraficos[i].Location = new Point(posX, posY);
             }
 
-            // Opcional: activar/desactivar botones si estás en primera o última página
+            // Activar/desactivar botones de paginación general
             btnAnteriorPagina.Enabled = pagina > 0;
             btnSiguientePagina.Enabled = end < totalGraficos;
+
+            // Si el gráfico de rentabilidad está visible, mostrar y reposicionar los botones
+            bool rentabilidadVisible = todosGraficos
+                .Skip(pagina * graficosPorPagina)
+                .Take(graficosPorPagina)
+                .Contains(chartRentabilidad);
+
+            btnAnteriorRentabilidad.Visible = rentabilidadVisible;
+            btnSiguienteRentabilidad.Visible = rentabilidadVisible;
+
+            if (rentabilidadVisible)
+            {
+                // Reiniciar la paginación de rentabilidad cada vez que vuelve a mostrarse
+                paginaActualRentabilidad = 0;
+
+                // Reposicionar botones debajo del gráfico
+                int btnY = chartRentabilidad.Location.Y + chartRentabilidad.Height + 10;
+                btnAnteriorRentabilidad.Location = new Point(chartRentabilidad.Location.X, btnY);
+                btnSiguienteRentabilidad.Location = new Point(
+                    chartRentabilidad.Location.X + btnAnteriorRentabilidad.Width + 10, btnY);
+
+                // Mostrar primera página de rentabilidad
+                MostrarPaginaRentabilidad(paginaActualRentabilidad);
+            }
+
         }
 
         private void btnAnteriorPagina_Click(object sender, EventArgs e)
@@ -410,6 +437,11 @@ namespace GyG.Presentacion
             chartRentabilidad.Series.Add(series);
             chartRentabilidad.ChartAreas[0].AxisX.Interval = 1;
             chartRentabilidad.ChartAreas[0].AxisX.LabelStyle.Angle = -45;
+            
+            int maxPaginas = (int)Math.Ceiling((double)listaRentabilidadCompleta.Count / productosPorPaginaRentabilidad);
+            btnAnteriorRentabilidad.Enabled = pagina > 0;
+            btnSiguienteRentabilidad.Enabled = pagina < maxPaginas - 1;
+
         }
 
         private void btnAnteriorRentabilidad_Click(object sender, EventArgs e)
