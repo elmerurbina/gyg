@@ -27,41 +27,90 @@ public partial class ProformaForm : Form
     }
 
     private void ConfigurarGrid()
+{
+    dgvProformas.Columns.Clear();
+    dgvProformas.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+    dgvProformas.AllowUserToAddRows = false;
+    dgvProformas.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+
+    dgvProformas.Columns.Add("Id", "ID");
+    dgvProformas.Columns["Id"].Visible = false;
+
+    dgvProformas.Columns.Add("Cliente", "Cliente");
+    dgvProformas.Columns.Add("Fecha", "Fecha");
+    dgvProformas.Columns.Add("Total", "Total");
+    dgvProformas.Columns.Add("Estado", "Estado");
+    dgvProformas.Columns["Estado"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+
+    // Botón para ver el archivo PDF
+    var btnArchivo = new DataGridViewButtonColumn
     {
-        dgvProformas.Columns.Clear();
-        dgvProformas.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-        dgvProformas.AllowUserToAddRows = false;
-        dgvProformas.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        Name = "ArchivoPDF",
+        HeaderText = "Archivo",
+        Text = "Ver PDF",
+        UseColumnTextForButtonValue = true
+    };
+    dgvProformas.Columns.Add(btnArchivo);
 
-        dgvProformas.Columns.Add("Id", "ID");
-        dgvProformas.Columns["Id"].Visible = false;
+    // Botón para completar venta
+    var btnCompletar = new DataGridViewButtonColumn
+    {
+        Name = "CompletarVenta",
+        HeaderText = "Acción",
+        Text = "Completar Venta",
+        UseColumnTextForButtonValue = true
+    };
+    dgvProformas.Columns.Add(btnCompletar);
 
-        dgvProformas.Columns.Add("Cliente", "Cliente");
-        dgvProformas.Columns.Add("Fecha", "Fecha");
-        dgvProformas.Columns.Add("Total", "Total");
+    dgvProformas.CellClick += dgvProformas_CellContentClicked;
+}
 
-        // Botón para ver el archivo PDF
-        var btnArchivo = new DataGridViewButtonColumn
+private void CargarProformas()
+{
+    dgvProformas.Rows.Clear();
+
+    using (var conn = Conexion.ObtenerConexion())
+    using (var cmd = new NpgsqlCommand(@"
+        SELECT p.id, c.nombre, p.fecha, p.total, a.nombre_archivo, p.estado
+        FROM proforma p
+        JOIN cliente c ON p.id_cliente = c.id
+        LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id_relacionado = p.id
+        ORDER BY p.fecha DESC;
+    ", conn))
+    using (var reader = cmd.ExecuteReader())
+    {
+        while (reader.Read())
         {
-            Name = "ArchivoPDF",
-            HeaderText = "Archivo",
-            Text = "Ver PDF",
-            UseColumnTextForButtonValue = true
-        };
-        dgvProformas.Columns.Add(btnArchivo);
+            int idProforma = reader.GetInt32(0);
+            string cliente = reader.GetString(1);
+            string fecha = reader.GetDateTime(2).ToString("dd/MM/yyyy HH:mm");
+            decimal total = reader.GetDecimal(3);
+            string archivoNombre = reader.IsDBNull(4) ? null : reader.GetString(4);
+            string estado = reader.GetString(5);
 
-        // Botón para completar venta
-        var btnCompletar = new DataGridViewButtonColumn
-        {
-            Name = "CompletarVenta",
-            HeaderText = "Acción",
-            Text = "Completar Venta",
-            UseColumnTextForButtonValue = true
-        };
-        dgvProformas.Columns.Add(btnCompletar);
+            // Asegúrate de pasar también el estado en el Add, ya que agregaste la columna
+            int rowIndex = dgvProformas.Rows.Add(idProforma, cliente, fecha, total.ToString("C2"), estado);
 
-        dgvProformas.CellClick += dgvProformas_CellContentClicked;
+            if (archivoNombre != null)
+            {
+                dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Tag = true; // Indica que sí hay PDF
+            }
+            else
+            {
+                dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Value = "Sin archivo";
+                dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].ReadOnly = true;
+            }
+
+            var cellCompletar = (DataGridViewButtonCell)dgvProformas.Rows[rowIndex].Cells["CompletarVenta"];
+            if (estado == "Finalizada")
+            {
+                cellCompletar.Value = "Venta Completa";
+                cellCompletar.Style.ForeColor = Color.Gray;
+                cellCompletar.ReadOnly = true;
+            }
+        }
     }
+}
 
     private void dgvProformas_CellContentClicked(object sender, DataGridViewCellEventArgs e)
     {
@@ -113,182 +162,135 @@ public partial class ProformaForm : Form
                 cell.Value = "Venta Completa";
                 cell.ReadOnly = true;
                 cell.Style.ForeColor = Color.Gray;
-
-                // Opcional: refrescar grilla
                 CargarProformas();
+                
             }
         }
-
-
     }
 
-    private void CargarProformas()
+    
+    private void CompletarVentaDesdeProforma(int idProforma)
+{
+    try
     {
-        dgvProformas.Rows.Clear();
+        List<ProductoCarrito> productos = new List<ProductoCarrito>();
+        int idCliente = 0;
+        decimal total = 0;
+        decimal descuento = 0;
 
         using (var conn = Conexion.ObtenerConexion())
-        using (var cmd = new NpgsqlCommand(@"
-            SELECT p.id, c.nombre, p.fecha, p.total, a.nombre_archivo, p.estado
-FROM proforma p
-JOIN cliente c ON p.id_cliente = c.id
-LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id_relacionado = p.id
-ORDER BY p.fecha DESC;
-
-        ", conn))
-        using (var reader = cmd.ExecuteReader())
         {
-            while (reader.Read())
-            {
-                int idProforma = reader.GetInt32(0);
-                string cliente = reader.GetString(1);
-                string fecha = reader.GetDateTime(2).ToString("dd/MM/yyyy HH:mm");
-                decimal total = reader.GetDecimal(3);
-                string archivoNombre = reader.IsDBNull(4) ? null : reader.GetString(4);
-                string estado = reader.GetString(5);
-
-                int rowIndex = dgvProformas.Rows.Add(idProforma, cliente, fecha, total.ToString("C2"));
-
-                if (archivoNombre != null)
-                {
-                    dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Tag = true; // Indica que sí hay PDF
-                }
-                else
-                {
-                    dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Value = "Sin archivo";
-                    dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].ReadOnly = true;
-                }
-
-                var cellCompletar = (DataGridViewButtonCell)dgvProformas.Rows[rowIndex].Cells["CompletarVenta"];
-                if (estado == "Finalizada")
-                {
-                    cellCompletar.Value = "Venta Completa";
-                    cellCompletar.Style.ForeColor = Color.Gray;
-                    cellCompletar.ReadOnly = true;
-                }
-
-            }
-        }
-    }
-
-
-    private void CompletarVentaDesdeProforma(int idProforma)
-    {
-        try
-        {
-            // Obtener detalles de la proforma
-            List<ProductoCarrito> productos = new List<ProductoCarrito>();
-            int idCliente = 0;
-            decimal total = 0;
-            decimal descuento = 0;
-
-            using (var conn = Conexion.ObtenerConexion())
-            {
-                // Cliente y total
-                using (var cmd = new NpgsqlCommand(@"
+            // Obtener datos cliente, total y descuento
+            using (var cmd = new NpgsqlCommand(@"
                 SELECT id_cliente, total, descuento
                 FROM proforma
                 WHERE id = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", idProforma);
+                using (var reader = cmd.ExecuteReader())
                 {
-                    cmd.Parameters.AddWithValue("@id", idProforma);
-                    using (var reader = cmd.ExecuteReader())
+                    if (reader.Read())
                     {
-                        if (reader.Read())
-                        {
-                            idCliente = reader.GetInt32(0);
-                            total = reader.GetDecimal(1);
-                            descuento = reader.IsDBNull(2) ? 0 : reader.GetDecimal(2);
-                        }
+                        idCliente = reader.GetInt32(0);
+                        total = reader.GetDecimal(1);
+                        descuento = reader.IsDBNull(2) ? 0 : reader.GetDecimal(2);
                     }
                 }
-
-             
-                // Detalles
-                using (var cmd = new NpgsqlCommand(@"
-    SELECT d.id_producto, d.cantidad, d.precio_unitario,
-           p.iva, p.descuento,
-           p.nombre, p.descripcion
-    FROM proforma_detalle d
-    JOIN producto p ON p.id = d.id_producto
-    WHERE d.id_proforma = @id", conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", idProforma);
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            productos.Add(new ProductoCarrito
-                            {
-                                Id = reader.GetInt32(0),
-                                Cantidad = reader.GetInt32(1),
-                                PrecioUnitario = reader.GetDecimal(2),
-                                IVA = reader.GetDecimal(3),
-                                Descuento = reader.GetDecimal(4),
-                                Nombre = reader.GetString(5),
-                                Descripcion = reader.GetString(6),
-                            });
-
-                        }
-                    }
-                }
-
-
-                // Serializar carrito en JSON
-                var detallesJson = JsonSerializer.Serialize(
-                    productos.Select(c => new
-                    {
-                        id = c.Id,
-                        cantidad = c.Cantidad,
-                        precioUnitario = c.PrecioUnitario,
-                        IVA = c.IVA,
-                        Descuento = c.Descuento
-                    })
-                );
-
-                // Insertar en factura
-                int idFacturaGenerada;
-                using (var cmd = new NpgsqlCommand(
-                           "SELECT sp_insert_factura(@id_cliente, @estado_pago, @total, @descuento, @detalles::json);",
-                           conn))
-                {
-                    cmd.Parameters.AddWithValue("id_cliente", idCliente);
-                    cmd.Parameters.AddWithValue("estado_pago", "efectivo"); // O permitir que el usuario elija
-                    cmd.Parameters.AddWithValue("total", total);
-                    cmd.Parameters.AddWithValue("descuento", descuento);
-                    cmd.Parameters.AddWithValue("detalles", detallesJson);
-                    idFacturaGenerada = Convert.ToInt32(cmd.ExecuteScalar());
-
-                    // Actualizar stock
-                    foreach (var item in productos)
-                    {
-                        using (var cmdStock = new NpgsqlCommand(
-                                   "UPDATE producto SET stock = stock - @cantidad WHERE id = @id_producto;", conn))
-                        {
-                            cmdStock.Parameters.AddWithValue("cantidad", item.Cantidad);
-                            cmdStock.Parameters.AddWithValue("id_producto", item.Id);
-                            cmdStock.ExecuteNonQuery();
-                        }
-                        using (var cmdEstado = new NpgsqlCommand("UPDATE proforma SET estado = 'Finalizada' WHERE id = @id;", conn))
-                        {
-                            cmdEstado.Parameters.AddWithValue("@id", idProforma);
-                            cmdEstado.ExecuteNonQuery();
-                        }
-                    }
-                }
-
-                // Generar y guardar PDF
-                GenerarYGuardarPDFFactura(idFacturaGenerada, conn.ConnectionString);
             }
 
-            MessageBox.Show("Venta registrada exitosamente desde proforma.");
+            // Obtener detalles productos
+            using (var cmd = new NpgsqlCommand(@"
+                SELECT d.id_producto, d.cantidad, d.precio_unitario,
+                       p.iva, p.descuento,
+                       p.nombre, p.descripcion
+                FROM proforma_detalle d
+                JOIN producto p ON p.id = d.id_producto
+                WHERE d.id_proforma = @id", conn))
+            {
+                cmd.Parameters.AddWithValue("@id", idProforma);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        productos.Add(new ProductoCarrito
+                        {
+                            Id = reader.GetInt32(0),
+                            Cantidad = reader.GetInt32(1),
+                            PrecioUnitario = reader.GetDecimal(2),
+                            IVA = reader.GetDecimal(3),
+                            Descuento = reader.GetDecimal(4),
+                            Nombre = reader.GetString(5),
+                            Descripcion = reader.GetString(6),
+                        });
+                    }
+                }
+            }
 
+            // Serializar detalles JSON
+            var detallesJson = JsonSerializer.Serialize(
+                productos.Select(c => new
+                {
+                    id = c.Id,
+                    cantidad = c.Cantidad,
+                    precioUnitario = c.PrecioUnitario,
+                    IVA = c.IVA,
+                    Descuento = c.Descuento
+                })
+            );
+
+            int idFacturaGenerada;
+            using (var cmd = new NpgsqlCommand(
+                       "SELECT sp_insert_factura(@id_cliente, @estado_pago, @total, @descuento, @detalles::json);",
+                       conn))
+            {
+                cmd.Parameters.AddWithValue("id_cliente", idCliente);
+                cmd.Parameters.AddWithValue("estado_pago", "efectivo");
+                cmd.Parameters.AddWithValue("total", total);
+                cmd.Parameters.AddWithValue("descuento", descuento);
+                cmd.Parameters.AddWithValue("detalles", detallesJson);
+                idFacturaGenerada = Convert.ToInt32(cmd.ExecuteScalar());
+            }
+
+            // Guardar relación factura <-> proforma
+            using (var cmdRel = new NpgsqlCommand(
+                "UPDATE factura SET id_proforma = @id_proforma WHERE id = @id_factura;", conn))
+            {
+                cmdRel.Parameters.AddWithValue("id_proforma", idProforma);
+                cmdRel.Parameters.AddWithValue("id_factura", idFacturaGenerada);
+                cmdRel.ExecuteNonQuery();
+            }
+
+            // Actualizar stock y estado proforma
+            foreach (var item in productos)
+            {
+                using (var cmdStock = new NpgsqlCommand(
+                           "UPDATE producto SET stock = stock - @cantidad WHERE id = @id_producto;", conn))
+                {
+                    cmdStock.Parameters.AddWithValue("cantidad", item.Cantidad);
+                    cmdStock.Parameters.AddWithValue("id_producto", item.Id);
+                    cmdStock.ExecuteNonQuery();
+                }
+            }
+
+            // Cambiar estado proforma a Finalizada (solo una vez)
+            using (var cmdEstado = new NpgsqlCommand(
+                       "UPDATE proforma SET estado = 'Finalizada' WHERE id = @id;", conn))
+            {
+                cmdEstado.Parameters.AddWithValue("@id", idProforma);
+                cmdEstado.ExecuteNonQuery();
+            }
+
+            // Generar y guardar PDF factura
+            GenerarYGuardarPDFFactura(idFacturaGenerada, conn.ConnectionString);
         }
-        
-        
-        catch (Exception ex)
-        {
-            MessageBox.Show("Error al completar la venta: " + ex.Message);
-        }
+
+        MessageBox.Show("Venta registrada exitosamente desde proforma.");
     }
+    catch (Exception ex)
+    {
+        MessageBox.Show("Error al completar la venta: " + ex.Message);
+    }
+}
 
 
     public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
