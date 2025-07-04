@@ -213,7 +213,6 @@ namespace GyG.Presentacion
 }
 
         
-        
 private void GenerarPDFPedido(int idPedido, DataTable productos, string nombreProveedor, NpgsqlConnection conn)
 {
     string nombreArchivo = $"pedido_{idPedido}.pdf";
@@ -231,21 +230,18 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
         doc.Add(new Paragraph($"Proveedor: {nombreProveedor}"));
         doc.Add(new Paragraph(" "));
 
-        PdfPTable table = new PdfPTable(5);
+        // ✅ Cambiar a 3 columnas
+        PdfPTable table = new PdfPTable(3);
         table.WidthPercentage = 100;
         table.AddCell("Producto");
         table.AddCell("Descripción");
         table.AddCell("Cantidad");
-        table.AddCell("Precio Compra");
-        table.AddCell("Precio Venta");
 
         foreach (DataRow row in productos.Rows)
         {
             table.AddCell(row["nombre"].ToString());
             table.AddCell(row["descripcion"].ToString());
             table.AddCell(row["cantidad"].ToString());
-            table.AddCell(Convert.ToDecimal(row["precio_compra"]).ToString("C2"));
-            table.AddCell(Convert.ToDecimal(row["precio_venta"]).ToString("C2"));
         }
 
         doc.Add(table);
@@ -269,8 +265,8 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
         cmd.ExecuteNonQuery();
     }
 }
-      
-        
+
+
         private void dgvPedidos_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0)
@@ -532,7 +528,7 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
                 DataPropertyName = "total_precio_compra",
                 HeaderText = "Precio Compra",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } // formato moneda
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
             });
 
             dgvPedidos.Columns.Add(new DataGridViewTextBoxColumn
@@ -541,8 +537,11 @@ private void GenerarPDFPedido(int idPedido, DataTable productos, string nombrePr
                 DataPropertyName = "total_precio_venta",
                 HeaderText = "Precio Venta",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" } // formato moneda
+                DefaultCellStyle = new DataGridViewCellStyle { Format = "C2" }
             });
+
+            dgvPedidos.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+
         }
 
 
