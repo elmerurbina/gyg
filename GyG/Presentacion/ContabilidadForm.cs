@@ -56,12 +56,12 @@ namespace GyG.Presentacion
                 dt.Columns.Add("Concepto");
                 dt.Columns.Add("Monto");
 
-                dt.Rows.Add("Ventas Netas", ventasNetas.ToString("C2"));
-                dt.Rows.Add("Costo de Ventas", costoVentas.ToString("C2"));
-                dt.Rows.Add("Gastos Operativos", gastosOperativos.ToString("C2"));
-                dt.Rows.Add("Utilidad Antes de Impuestos", utilidadAntesImpuestos.ToString("C2"));
-                dt.Rows.Add("Impuesto sobre la Renta (30%)", impuestoRenta.ToString("C2"));
-                dt.Rows.Add("Utilidad Neta", utilidadNeta.ToString("C2"));
+                dt.Rows.Add("Ventas Netas",  "C$ " + ventasNetas.ToString("N2"));
+                dt.Rows.Add("Costo de Ventas",  "C$ " + costoVentas.ToString("N2"));
+                dt.Rows.Add("Gastos Operativos",  "C$ " + gastosOperativos.ToString("N2"));
+                dt.Rows.Add("Utilidad Antes de Impuestos",  "C$ " + utilidadAntesImpuestos.ToString("N2"));
+                dt.Rows.Add("Impuesto sobre la Renta (30%)",  "C$ " + impuestoRenta.ToString("N2"));
+                dt.Rows.Add("Utilidad Neta",  "C$ " + utilidadNeta.ToString("N2"));
 
                 dgvEstadoResultados.DataSource = dt;
                 dgvEstadoResultados.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
@@ -90,9 +90,10 @@ namespace GyG.Presentacion
                 dt.Columns.Add("Cuenta");
                 dt.Columns.Add("Monto");
 
-                dt.Rows.Add("Activos", activos.ToString("C2"));
-                dt.Rows.Add("Pasivos", pasivos.ToString("C2"));
-                dt.Rows.Add("Patrimonio", patrimonio.ToString("C2"));
+                dt.Rows.Add("Activos", "C$ " + activos.ToString("N2"));
+                dt.Rows.Add("Pasivos", "C$ " + pasivos.ToString("N2"));
+                dt.Rows.Add("Patrimonio", "C$ " + patrimonio.ToString("N2"));
+
 
                 dgvBalanceGeneral.DataSource = dt;
                 dgvBalanceGeneral.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
