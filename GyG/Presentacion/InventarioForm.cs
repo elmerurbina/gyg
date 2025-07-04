@@ -14,12 +14,14 @@ namespace GyG.Presentacion
         public InventarioForm()
         {
             InitializeComponent();
+        
         }
 
         private void InventarioForm_Load(object sender, EventArgs e)
         {
             CargarCategorias();
             CargarProductos();
+            HabilitarBotones(true, false, false);
             btnEscanearQR = new Button
             {
                 Text = "Escanear QR",
@@ -69,10 +71,13 @@ namespace GyG.Presentacion
 
         private void BtnEscanearQR_Click(object sender, EventArgs e)
         {
-            var lector = new LectorCodigoForm(); // Debés tener este formulario ya creado
-            lector.ShowDialog();
+            var lector = new LectorCodigoForm();
 
-            // Opcional: si tu lector llena datos del producto, lo podrías actualizar aquí.
+            // Abrí el lector, y si retorna OK, recargá productos
+            if (lector.ShowDialog() == DialogResult.OK)
+            {
+                CargarProductos(); // Esto refresca el DataGridView con el nuevo producto
+            }
         }
 
 
@@ -107,6 +112,8 @@ namespace GyG.Presentacion
             }
         }
 
+        
+        
  
         private void dgvProductos_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
@@ -138,6 +145,8 @@ namespace GyG.Presentacion
                 // IVA y descuento: pueden ser NULL o vacíos, chequeamos también
                 txtIVA.Text = fila.Cells["iva"].Value == DBNull.Value ? "" : fila.Cells["iva"].Value.ToString();
                 txtDescuento.Text = fila.Cells["descuento"].Value == DBNull.Value ? "" : fila.Cells["descuento"].Value.ToString();
+                
+                HabilitarBotones(false, true, true);
             }
         }
 
@@ -221,6 +230,7 @@ private void btnEditar_Click(object sender, EventArgs e)
         MessageBox.Show("Producto actualizado correctamente.");
         LimpiarCampos();
         CargarProductos();
+        HabilitarBotones(true, false, false);
         productoSeleccionadoId = null;
     }
     catch (Exception ex)
@@ -260,6 +270,7 @@ private void btnEditar_Click(object sender, EventArgs e)
                     MessageBox.Show("Producto eliminado correctamente.");
                     LimpiarCampos();
                     CargarProductos();
+                    HabilitarBotones(true, false, false);
                     productoSeleccionadoId = null;
                 }
                 catch (Exception ex)
@@ -346,6 +357,15 @@ private void btnEditar_Click(object sender, EventArgs e)
         MessageBox.Show("Error al guardar producto: " + ex.Message);
     }
 }
+
+  
+private void HabilitarBotones(bool guardar, bool editar, bool eliminar)
+{
+    btnGuardar.Enabled = guardar;
+    btnEditar.Enabled = editar;
+    btnEliminar.Enabled = eliminar;
+}
+
 
 
         private bool ValidarCampos()
@@ -436,6 +456,7 @@ private void btnEditar_Click(object sender, EventArgs e)
             txtIVA.Clear();
             txtDescuento.Clear();
             productoSeleccionadoId = null;
+            HabilitarBotones(true, false, false);
         }
 
     }

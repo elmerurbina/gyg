@@ -383,6 +383,9 @@ namespace GyG.Presentacion
 
         MessageBox.Show("Producto registrado correctamente.", "Registro exitoso");
         lblEstado.Text = "Producto registrado.";
+        this.DialogResult = DialogResult.OK;
+        this.Close();
+
         btnGuardar.Enabled = false;
         LimpiarCampos();
     }
@@ -425,6 +428,34 @@ namespace GyG.Presentacion
             btnGuardar.Enabled = false;
             lblEstado.Text = "Campos limpiados.";
         }
+        
+        private void EstilizarBotones()
+        {
+            // Iniciar Escaneo - verde
+            btnIniciar.BackColor = Color.FromArgb(40, 167, 69);  // #28a745
+            btnIniciar.ForeColor = Color.White;
+            btnIniciar.FlatStyle = FlatStyle.Flat;
+            btnIniciar.FlatAppearance.BorderSize = 0;
+
+            // Terminar - rojo
+            btnTerminar.BackColor = Color.FromArgb(220, 53, 69); // #dc3545
+            btnTerminar.ForeColor = Color.White;
+            btnTerminar.FlatStyle = FlatStyle.Flat;
+            btnTerminar.FlatAppearance.BorderSize = 0;
+
+            // Guardar Producto - azul
+            btnGuardar.BackColor = Color.FromArgb(0, 123, 255);  // #007bff
+            btnGuardar.ForeColor = Color.White;
+            btnGuardar.FlatStyle = FlatStyle.Flat;
+            btnGuardar.FlatAppearance.BorderSize = 0;
+
+            // Buscar Manual - naranja
+            btnBuscarManual.BackColor = Color.FromArgb(253, 126, 20); // #fd7e14
+            btnBuscarManual.ForeColor = Color.White;
+            btnBuscarManual.FlatStyle = FlatStyle.Flat;
+            btnBuscarManual.FlatAppearance.BorderSize = 0;
+        }
+
 
     }
 }

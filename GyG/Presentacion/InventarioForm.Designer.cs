@@ -150,21 +150,38 @@ namespace GyG.Presentacion
             // Botones
             this.btnGuardar.Text = "Guardar";
             this.btnGuardar.Location = new System.Drawing.Point(20, 340);
+            btnGuardar.BackColor = Color.FromArgb(40, 167, 69);
             btnGuardar.Click += btnGuardar_Click;
+            btnGuardar.ForeColor = Color.White;
+            btnGuardar.FlatStyle = FlatStyle.Flat;
+            btnGuardar.FlatAppearance.BorderSize = 0;
 
 
             this.btnEditar.Text = "Editar";
             this.btnEditar.Location = new System.Drawing.Point(120, 340);
+            btnEditar.BackColor = Color.FromArgb(0, 123, 255);
             btnEditar.Click += btnEditar_Click;
+            btnEditar.ForeColor = Color.White;
+            btnEditar.FlatStyle = FlatStyle.Flat;
+            btnEditar.FlatAppearance.BorderSize = 0;
 
 
             this.btnEliminar.Text = "Eliminar";
             this.btnEliminar.Location = new System.Drawing.Point(220, 340);
+            btnEliminar.BackColor = Color.FromArgb(220, 53, 69);
             btnEliminar.Click += btnEliminar_Click;
+            btnEliminar.ForeColor = Color.White;
+            btnEliminar.FlatStyle = FlatStyle.Flat;
+            btnEliminar.FlatAppearance.BorderSize = 0;
 
             
             this.btnEscanearQR.Text = "Escanear Codigo QR";
             this.btnEscanearQR.Location = new System.Drawing.Point(120, 340);
+            btnEscanearQR.BackColor = Color.FromArgb(255, 193, 7);
+            btnEscanearQR.ForeColor = Color.White;
+            btnEscanearQR.FlatStyle = FlatStyle.Flat;
+            btnEscanearQR.FlatAppearance.BorderSize = 0;
+
 
             // DataGridView
             this.dgvProductos.Location = new System.Drawing.Point(20, 410);
@@ -222,6 +239,9 @@ namespace GyG.Presentacion
             this.Load += new System.EventHandler(this.InventarioForm_Load);
             this.ResumeLayout(false);
         }
+        
+        
+        
 
         protected override void Dispose(bool disposing)
         {

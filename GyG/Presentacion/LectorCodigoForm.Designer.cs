@@ -97,7 +97,7 @@ namespace GyG.Presentacion
 
             // btnGuardar
             this.btnGuardar.Text = "Guardar Producto";
-            this.btnGuardar.Location = new System.Drawing.Point(360, 140);
+            this.btnGuardar.Location = new System.Drawing.Point(380, 460);
             this.btnGuardar.Click += new System.EventHandler(this.btnGuardar_Click);
             this.btnGuardar.Enabled = false;
 
@@ -214,6 +214,7 @@ namespace GyG.Presentacion
             this.chkIngresoManual = new System.Windows.Forms.CheckBox();
             this.chkIngresoManual.Text = "Ingresar código manualmente";
             this.chkIngresoManual.Location = new System.Drawing.Point(450, 200);
+            this.chkIngresoManual.Width = 400;
             this.chkIngresoManual.CheckedChanged += new System.EventHandler(this.chkIngresoManual_CheckedChanged);
 
             this.txtCodigoManual = new System.Windows.Forms.TextBox();
@@ -288,6 +289,7 @@ namespace GyG.Presentacion
 
             this.ResumeLayout(false);
             this.PerformLayout();
+            EstilizarBotones();
         }
     }
 }
