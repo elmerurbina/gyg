@@ -607,10 +607,16 @@ namespace GyG.Presentacion
             // ✅ Usa la conexión directamente con el método que ya tienes
             using (var conn = Conexion.ObtenerConexion())
             {
-                GenerarYGuardarPDFProforma(idProformaGenerada, conn.ConnectionString);
+                bool generado = GenerarYGuardarPDFProforma(idProformaGenerada, conn.ConnectionString);
+                if (generado)
+                {
+                    MessageBox.Show("✅ Proforma generada y PDF guardado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                // No mostramos mensaje de error aquí porque ya se mostró dentro del método si falló
             }
 
-            MessageBox.Show("Proforma generada correctamente y PDF guardado.", "Proforma");
+
+          
             LimpiarTodo();
         }
 
@@ -640,7 +646,7 @@ namespace GyG.Presentacion
 
 
 
-   public void GenerarYGuardarPDFProforma(int idProforma, string connectionString)
+  public bool GenerarYGuardarPDFProforma(int idProforma, string connectionString)
 {
     byte[] pdfBytes;
 
@@ -688,6 +694,13 @@ namespace GyG.Presentacion
                 }
             }
 
+            // ✅ Validación: si no hay cliente, salimos
+            if (string.IsNullOrWhiteSpace(clienteNombre))
+            {
+                MessageBox.Show("⚠️ No se puede generar la proforma porque no hay datos del cliente asociados.", "Datos faltantes", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
             // Productos con descripción incluida
             using (var da = new NpgsqlDataAdapter(@"
                 SELECT prod.nombre AS producto, prod.descripcion, d.cantidad, d.precio_unitario, d.subtotal
@@ -709,7 +722,7 @@ namespace GyG.Presentacion
         // Tabla con descripción
         iTextPdfPTable table = new iTextPdfPTable(5);
         table.WidthPercentage = 100;
-        table.SetWidths(new float[] { 30, 35, 12, 12, 13 }); // Ajusta como prefieras
+        table.SetWidths(new float[] { 30, 35, 12, 12, 13 });
 
         table.AddCell("Producto");
         table.AddCell("Descripción");
@@ -741,28 +754,27 @@ namespace GyG.Presentacion
     {
         conn.Open();
         using (var cmd = new NpgsqlCommand(@"
-    INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido, id_relacionado)
-    VALUES (@nombre, @tipo, @contenido, @id)", conn))
-{
-    cmd.Parameters.AddWithValue("@nombre", $"proforma_{idProforma}.pdf");
-    cmd.Parameters.AddWithValue("@tipo", "proforma");
-    cmd.Parameters.AddWithValue("@contenido", pdfBytes);
-    cmd.Parameters.AddWithValue("@id", idProforma);
-    cmd.ExecuteNonQuery();
+            INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido, id_relacionado)
+            VALUES (@nombre, @tipo, @contenido, @id)", conn))
+        {
+            cmd.Parameters.AddWithValue("@nombre", $"proforma_{idProforma}.pdf");
+            cmd.Parameters.AddWithValue("@tipo", "proforma");
+            cmd.Parameters.AddWithValue("@contenido", pdfBytes);
+            cmd.Parameters.AddWithValue("@id", idProforma);
+            cmd.ExecuteNonQuery();
 
-            
-            // Guardar temporalmente el archivo en disco y abrirlo
             string nombreArchivo = $"proforma_{idProforma}.pdf";
             string rutaTemporal = Path.Combine(Path.GetTempPath(), nombreArchivo);
             File.WriteAllBytes(rutaTemporal, pdfBytes);
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
             {
                 FileName = rutaTemporal,
-                UseShellExecute = true // Abre con el visor predeterminado
+                UseShellExecute = true
             });
-
         }
     }
+
+    return true;
 }
 
    
