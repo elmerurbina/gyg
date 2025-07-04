@@ -12,56 +12,126 @@ namespace GyG.Presentacion
         private DataGridView dgvHistorialFacturas;
         private Button btnAbrirFactura;
         private Button btnCancelarCredito;
+        private TextBox txtBuscar;
+        private Button btnBuscar;
+
 
         public HistorialFacturasForm()
         {
             InitializeComponent();
-            this.Text = "Historial de Facturas - Ventas";
-            this.Size = new Size(750, 500);
-            this.StartPosition = FormStartPosition.CenterParent;
+             this.Text = "Historial de Facturas - Ventas";
+    this.Size = new Size(800, 500);
+    this.StartPosition = FormStartPosition.CenterParent;
 
-            dgvHistorialFacturas = new DataGridView
-            {
-                Dock = DockStyle.Top,
-                Height = 360,
-                ReadOnly = true,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
-            };
+    // Crear un contenedor principal
+    var mainLayout = new TableLayoutPanel
+    {
+        Dock = DockStyle.Fill,
+        RowCount = 3,
+        ColumnCount = 1,
+    };
+    mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));   // Buscador
+    mainLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));   // DGV ocupa lo que sobra
+    mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));   // Botones
 
-            dgvHistorialFacturas.Columns.Add("id", "ID");
-            dgvHistorialFacturas.Columns["id"].Visible = false;
-            dgvHistorialFacturas.Columns.Add("nombre_archivo", "Nombre Archivo");
-            dgvHistorialFacturas.Columns.Add("fecha", "Fecha");
-            dgvHistorialFacturas.Columns.Add("estado_pago", "Estado de Pago");
+    this.Controls.Add(mainLayout);
 
-            this.Controls.Add(dgvHistorialFacturas);
+    // Panel de búsqueda
+    var panelBusqueda = new Panel
+    {
+        Dock = DockStyle.Fill,
+        Padding = new Padding(10),
+    };
 
-            btnAbrirFactura = new Button
-            {
-                Text = "Abrir Factura Seleccionada",
-                Dock = DockStyle.Bottom,
-                Height = 40,
-                BackColor = Color.FromArgb(0, 123, 255),
-            };
-            btnAbrirFactura.Click += BtnAbrirFactura_Click;
-            this.Controls.Add(btnAbrirFactura);
+    txtBuscar = new TextBox
+    {
+        PlaceholderText = "Buscar por nombre o ID de factura...",
+        Width = 300,
+        Anchor = AnchorStyles.Left,
+    };
+    btnBuscar = new Button
+    {
+        Text = "Buscar",
+        Width = 80,
+        BackColor = Color.FromArgb(0, 153, 51),
+        ForeColor = Color.White,
+        Anchor = AnchorStyles.Left,
+        Left = txtBuscar.Right + 10
+    };
+    btnBuscar.Click += BtnBuscar_Click;
 
-            btnCancelarCredito = new Button
-            {
-                Text = "Cancelar Crédito (Marcar como Pagado)",
-                Dock = DockStyle.Bottom,
-                Height = 40,
-                Width = 50,
-                BackColor = Color.FromArgb(40, 167, 69),
-                Visible = false
-            };
-            btnCancelarCredito.Click += BtnCancelarCredito_Click;
-            this.Controls.Add(btnCancelarCredito);
+    panelBusqueda.Controls.Add(txtBuscar);
+    panelBusqueda.Controls.Add(btnBuscar);
 
-            dgvHistorialFacturas.SelectionChanged += DgvHistorialFacturas_SelectionChanged;
+    // Alinear el botón junto al textbox
+    txtBuscar.Location = new Point(10, 40);
+    btnBuscar.Location = new Point(txtBuscar.Right + 12, 40);
 
-            CargarHistorialFacturas();
+    mainLayout.Controls.Add(panelBusqueda, 0, 0);
+
+    // DGV
+    dgvHistorialFacturas = new DataGridView
+    {
+        Dock = DockStyle.Fill,
+        ReadOnly = true,
+        SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+        AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
+    };
+
+    dgvHistorialFacturas.Columns.Add("id", "ID");
+    dgvHistorialFacturas.Columns["id"].Visible = false;
+    dgvHistorialFacturas.Columns.Add("nombre_archivo", "Nombre Archivo");
+    dgvHistorialFacturas.Columns.Add("fecha", "Fecha");
+    dgvHistorialFacturas.Columns.Add("estado_pago", "Estado de Pago");
+
+    dgvHistorialFacturas.SelectionChanged += DgvHistorialFacturas_SelectionChanged;
+
+    mainLayout.Controls.Add(dgvHistorialFacturas, 0, 1);
+
+    // Panel de botones
+    var panelBotones = new Panel
+    {
+        Dock = DockStyle.Fill,
+        Padding = new Padding(10),
+    };
+
+    btnAbrirFactura = new Button
+    {
+        Text = "Abrir Factura Seleccionada",
+        Width = 200,
+        Height = 35,
+        BackColor = Color.FromArgb(0, 123, 255),
+        ForeColor = Color.White,
+        Anchor = AnchorStyles.Right
+    };
+    btnAbrirFactura.Click += BtnAbrirFactura_Click;
+
+    btnCancelarCredito = new Button
+    {
+        Text = "Cancelar Crédito (Marcar como Pagado)",
+        Width = 250,
+        Height = 35,
+        BackColor = Color.FromArgb(40, 167, 69),
+        ForeColor = Color.White,
+        Visible = false,
+        Anchor = AnchorStyles.Right
+    };
+    btnCancelarCredito.Click += BtnCancelarCredito_Click;
+
+    panelBotones.Controls.Add(btnCancelarCredito);
+    panelBotones.Controls.Add(btnAbrirFactura);
+
+    // Posicionar botones a la derecha
+    panelBotones.Resize += (s, e) =>
+    {
+        btnCancelarCredito.Location = new Point(panelBotones.Width - btnCancelarCredito.Width - 10, 10);
+        btnAbrirFactura.Location = new Point(panelBotones.Width - btnCancelarCredito.Width - btnAbrirFactura.Width - 20, 10);
+    };
+
+    mainLayout.Controls.Add(panelBotones, 0, 2);
+
+    // Cargar datos
+    CargarHistorialFacturas();
         }
 
         
@@ -114,7 +184,7 @@ namespace GyG.Presentacion
         }
 
 
-        private void CargarHistorialFacturas()
+        private void CargarHistorialFacturas(string filtro = "")
         {
             dgvHistorialFacturas.Rows.Clear();
 
@@ -124,20 +194,38 @@ namespace GyG.Presentacion
         FROM archivo_pdf a
         JOIN factura f ON a.nombre_archivo = CONCAT('factura_', f.id, '.pdf')
         WHERE a.tipo = 'factura'
-        ORDER BY a.fecha DESC
-        LIMIT 50", conn))
-            using (var reader = cmd.ExecuteReader())
+        " + (string.IsNullOrWhiteSpace(filtro) ? "" : "AND (LOWER(a.nombre_archivo) LIKE @filtro OR f.id::TEXT LIKE @filtro)") + @"
+        ORDER BY 
+            CASE f.estado_pago WHEN 'credito' THEN 0 ELSE 1 END,
+            a.fecha DESC
+        LIMIT 50;
+    ", conn))
             {
-                while (reader.Read())
+                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    int id = reader.GetInt32(0);
-                    string nombre = reader.GetString(1);
-                    DateTime fecha = reader.IsDBNull(2) ? DateTime.MinValue : reader.GetDateTime(2);
-                    string estadoPago = reader.IsDBNull(3) ? "" : reader.GetString(3);
+                    cmd.Parameters.AddWithValue("@filtro", "%" + filtro.ToLower() + "%");
+                }
 
-                    dgvHistorialFacturas.Rows.Add(id, nombre, fecha == DateTime.MinValue ? "" : fecha.ToString("dd/MM/yyyy HH:mm"), estadoPago);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        int id = reader.GetInt32(0);
+                        string nombre = reader.GetString(1);
+                        DateTime fecha = reader.IsDBNull(2) ? DateTime.MinValue : reader.GetDateTime(2);
+                        string estadoPago = reader.IsDBNull(3) ? "" : reader.GetString(3);
+
+                        dgvHistorialFacturas.Rows.Add(id, nombre, fecha == DateTime.MinValue ? "" : fecha.ToString("dd/MM/yyyy HH:mm"), estadoPago);
+                    }
                 }
             }
+        }
+
+        
+        private void BtnBuscar_Click(object sender, EventArgs e)
+        {
+            string filtro = txtBuscar.Text.Trim();
+            CargarHistorialFacturas(filtro);
         }
 
 
