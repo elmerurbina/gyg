@@ -113,60 +113,68 @@ private void CargarProformas()
 }
 
     private void dgvProformas_CellContentClicked(object sender, DataGridViewCellEventArgs e)
+{
+    if (e.RowIndex < 0) return;
+
+    string columnName = dgvProformas.Columns[e.ColumnIndex].Name;
+    int idProforma = (int)dgvProformas.Rows[e.RowIndex].Cells["Id"].Value;
+    string estado = dgvProformas.Rows[e.RowIndex].Cells["Estado"].Value?.ToString();
+
+    if (columnName == "ArchivoPDF")
     {
-        if (e.RowIndex < 0) return;
+        string archivo = GuardarArchivoDesdeDB(idProforma);
 
-        string columnName = dgvProformas.Columns[e.ColumnIndex].Name;
-        int idProforma = (int)dgvProformas.Rows[e.RowIndex].Cells["Id"].Value;
-
-        if (columnName == "ArchivoPDF")
+        if (!string.IsNullOrEmpty(archivo) && File.Exists(archivo))
         {
-            string archivo = GuardarArchivoDesdeDB(idProforma);
-
-            if (!string.IsNullOrEmpty(archivo) && File.Exists(archivo))
+            try
             {
-                try
+                Process.Start(new ProcessStartInfo
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = archivo,
-                        UseShellExecute = true
-                    });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error al abrir el archivo PDF: " + ex.Message);
-                }
+                    FileName = archivo,
+                    UseShellExecute = true
+                });
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Archivo no encontrado o no disponible.");
+                MessageBox.Show("Error al abrir el archivo PDF: " + ex.Message);
             }
         }
-
-        if (columnName == "CompletarVenta")
+        else
         {
-            string textoBoton = dgvProformas.Rows[e.RowIndex].Cells["CompletarVenta"].Value?.ToString();
-            if (textoBoton == "Venta Completa") return;
-
-            var confirm = MessageBox.Show("¿Desea completar la venta para esta proforma?", "Confirmar",
-                MessageBoxButtons.YesNo);
-
-            if (confirm == DialogResult.Yes)
-            {
-                // Ejecutar la venta
-                CompletarVentaDesdeProforma(idProforma);
-
-                // Deshabilitar el botón
-                var cell = (DataGridViewButtonCell)dgvProformas.Rows[e.RowIndex].Cells["CompletarVenta"];
-                cell.Value = "Venta Completa";
-                cell.ReadOnly = true;
-                cell.Style.ForeColor = Color.Gray;
-                CargarProformas();
-                
-            }
+            MessageBox.Show("Archivo no encontrado o no disponible.");
         }
     }
+
+    if (columnName == "CompletarVenta")
+    {
+        // Validar estado antes de proceder
+        if (estado == "Finalizada")
+        {
+            MessageBox.Show("Esta proforma ya está finalizada y no se puede completar nuevamente.", "Venta Finalizada", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return; // Salir sin hacer nada más
+        }
+
+        string textoBoton = dgvProformas.Rows[e.RowIndex].Cells["CompletarVenta"].Value?.ToString();
+        if (textoBoton == "Venta Completa") return;
+
+        var confirm = MessageBox.Show("¿Desea completar la venta para esta proforma?", "Confirmar",
+            MessageBoxButtons.YesNo);
+
+        if (confirm == DialogResult.Yes)
+        {
+            // Ejecutar la venta
+            CompletarVentaDesdeProforma(idProforma);
+
+            // Deshabilitar el botón
+            var cell = (DataGridViewButtonCell)dgvProformas.Rows[e.RowIndex].Cells["CompletarVenta"];
+            cell.Value = "Venta Completa";
+            cell.ReadOnly = true;
+            cell.Style.ForeColor = Color.Gray;
+            CargarProformas();
+        }
+    }
+}
+
 
     
     private void CompletarVentaDesdeProforma(int idProforma)
