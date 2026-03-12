@@ -18,7 +18,7 @@ namespace GyG.Presentacion
         private void InicializarLayout()
         {
             this.WindowState = FormWindowState.Maximized;
-            this.Text = "Sistema GyG";
+            this.Text = "Negocio+";
             this.BackColor = Color.White;
 
             // Crear Sidebar

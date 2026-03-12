@@ -11,7 +11,7 @@ namespace GyG.Presentacion.Controles
             // 
             // lblTitulo
             // 
-            this.lblTitulo.Text = "Sistema de Inventario y Ventas GyG";
+            this.lblTitulo.Text = "Sistema Integral de Punto de Venta, Inventario y Análisis de Datos";
             this.lblTitulo.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
             this.lblTitulo.ForeColor = System.Drawing.Color.White;
             this.lblTitulo.AutoSize = true;

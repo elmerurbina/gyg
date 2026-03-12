@@ -232,7 +232,7 @@ namespace GyG.Presentacion
 
 
 
-            this.Text = "Gestión de Inventario - GyG";
+            this.Text = "Gestión de Inventario - Negocio+";
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ClientSize = new System.Drawing.Size(1410, 680);
 
