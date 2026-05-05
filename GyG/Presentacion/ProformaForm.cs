@@ -71,10 +71,9 @@ private void CargarProformas()
 
     using (var conn = Conexion.ObtenerConexion())
     using (var cmd = new NpgsqlCommand(@"
-        SELECT p.id, c.nombre, p.fecha, p.total, a.nombre_archivo, p.estado
+        SELECT p.id, c.nombre, p.fecha, p.total, p.estado
         FROM proforma p
         JOIN cliente c ON p.id_cliente = c.id
-        LEFT JOIN archivo_pdf a ON a.tipo = 'proforma' AND a.id_relacionado = p.id
         ORDER BY p.fecha DESC;
     ", conn))
     using (var reader = cmd.ExecuteReader())
@@ -85,15 +84,17 @@ private void CargarProformas()
             string cliente = reader.GetString(1);
             string fecha = reader.GetDateTime(2).ToString("dd/MM/yyyy HH:mm");
             decimal total = reader.GetDecimal(3);
-            string archivoNombre = reader.IsDBNull(4) ? null : reader.GetString(4);
-            string estado = reader.GetString(5);
+            string estado = reader.IsDBNull(4) ? "Pendiente" : reader.GetString(4);
 
-            // Asegúrate de pasar también el estado en el Add, ya que agregaste la columna
             int rowIndex = dgvProformas.Rows.Add(idProforma, cliente, fecha, total.ToString("C2"), estado);
 
-            if (archivoNombre != null)
+            // Verificar si existe PDF asociado
+            bool tienePDF = VerificarPDFExistente(idProforma);
+            
+            if (tienePDF)
             {
-                dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Tag = true; // Indica que sí hay PDF
+                dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Tag = true;
+                dgvProformas.Rows[rowIndex].Cells["ArchivoPDF"].Value = "Ver PDF";
             }
             else
             {
@@ -108,7 +109,30 @@ private void CargarProformas()
                 cellCompletar.Style.ForeColor = Color.Gray;
                 cellCompletar.ReadOnly = true;
             }
+            else
+            {
+                cellCompletar.Value = "Completar Venta";
+                cellCompletar.Style.ForeColor = Color.Black;
+                cellCompletar.ReadOnly = false;
+            }
         }
+    }
+}
+
+
+private bool VerificarPDFExistente(int idProforma)
+{
+    using (var conn = Conexion.ObtenerConexion())
+    using (var cmd = new NpgsqlCommand(@"
+        SELECT COUNT(*) 
+        FROM archivo_pdf 
+        WHERE tipo = 'proforma'
+        ORDER BY fecha_creacion DESC
+        LIMIT 1;
+    ", conn))
+    {
+        int count = Convert.ToInt32(cmd.ExecuteScalar());
+        return count > 0;
     }
 }
 

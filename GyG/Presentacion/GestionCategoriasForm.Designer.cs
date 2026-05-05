@@ -11,11 +11,11 @@ namespace GyG.Presentacion
         private System.Windows.Forms.Button btnAgregar;
         private System.Windows.Forms.Button btnEditar;
         private System.Windows.Forms.Button btnEliminar;
+        
+        // Panel para mejor organización
+        private Panel pnlMainContainer;
+        private Panel pnlButtons;
 
-        /// <summary>
-        /// Limpiar los recursos que se estén usando.
-        /// </summary>
-        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -25,8 +25,6 @@ namespace GyG.Presentacion
             base.Dispose(disposing);
         }
 
-        #region Código generado por el Diseñador de Windows Forms
-
         private void InitializeComponent()
         {
             this.dgvCategorias = new System.Windows.Forms.DataGridView();
@@ -35,114 +33,171 @@ namespace GyG.Presentacion
             this.btnAgregar = new System.Windows.Forms.Button();
             this.btnEditar = new System.Windows.Forms.Button();
             this.btnEliminar = new System.Windows.Forms.Button();
+            this.pnlMainContainer = new Panel();
+            this.pnlButtons = new Panel();
 
             ((System.ComponentModel.ISupportInitialize)(this.dgvCategorias)).BeginInit();
+            this.pnlMainContainer.SuspendLayout();
+            this.pnlButtons.SuspendLayout();
             this.SuspendLayout();
 
-            // 
-            // dgvCategorias
-            // 
+            // ========== COLOR PALETTE (Sacuanjoche) ==========
+            Color primary500 = Color.FromArgb(139, 94, 60);      // #8B5E3C
+            Color secondary500 = Color.FromArgb(255, 193, 7);    // #FFC107
+            Color errorColor = Color.FromArgb(211, 47, 47);      // #D32F2F
+            Color textPrimary = Color.FromArgb(45, 41, 38);      // #2D2926
+            Color inputBg = Color.FromArgb(249, 249, 249);       // Gris 100
+            Color formBg = Color.FromArgb(255, 249, 230);        // Secundario 100
+            Color panelBg = Color.FromArgb(243, 235, 225);       // Primario 100
+
+            // ========== FORM CONFIGURATION ==========
+            this.BackColor = formBg;
+            this.Text = "Gestión de Categorías - Sacuanjoche";
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimumSize = new Size(600, 500);
+            this.Size = new Size(700, 550);
+            this.Font = new Font("Segoe UI", 9F);
+            this.Padding = new Padding(15);
+
+            // ========== MAIN CONTAINER ==========
+            this.pnlMainContainer.Dock = DockStyle.Fill;
+            this.pnlMainContainer.BackColor = formBg;
+            this.pnlMainContainer.Padding = new Padding(15);
+            this.pnlMainContainer.AutoScroll = true;
+
+            // ========== DATA GRID VIEW ==========
+            // Configuración del DataGridView
             this.dgvCategorias.AllowUserToAddRows = false;
             this.dgvCategorias.AllowUserToDeleteRows = false;
             this.dgvCategorias.AllowUserToResizeRows = false;
-            this.dgvCategorias.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvCategorias.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dgvCategorias.Location = new System.Drawing.Point(12, 12);
+            this.dgvCategorias.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvCategorias.BackgroundColor = inputBg;
+            this.dgvCategorias.BorderStyle = BorderStyle.FixedSingle;
+            this.dgvCategorias.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dgvCategorias.Dock = DockStyle.Top;
+            this.dgvCategorias.Location = new Point(0, 0);
+            this.dgvCategorias.Size = new Size(650, 300);
             this.dgvCategorias.MultiSelect = false;
             this.dgvCategorias.Name = "dgvCategorias";
             this.dgvCategorias.ReadOnly = true;
             this.dgvCategorias.RowHeadersVisible = false;
-            this.dgvCategorias.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvCategorias.Size = new System.Drawing.Size(360, 250);
-            this.dgvCategorias.TabIndex = 0;
-            this.dgvCategorias.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvCategorias_CellClick);
+            this.dgvCategorias.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            this.dgvCategorias.GridColor = Color.FromArgb(196, 164, 132);
+            this.dgvCategorias.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            this.dgvCategorias.DefaultCellStyle.ForeColor = textPrimary;
+            this.dgvCategorias.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            this.dgvCategorias.ColumnHeadersDefaultCellStyle.BackColor = primary500;
+            this.dgvCategorias.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            this.dgvCategorias.EnableHeadersVisualStyles = false;
+            this.dgvCategorias.CellClick += new DataGridViewCellEventHandler(this.dgvCategorias_CellClick);
 
-            // Agregamos las columnas al DataGridView
-            var colId = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            // Agregar columnas al DataGridView
+            var colId = new DataGridViewTextBoxColumn();
             colId.Name = "Id";
             colId.HeaderText = "ID";
-            colId.Visible = false;  // Oculto porque solo es para uso interno
+            colId.Visible = false;
             this.dgvCategorias.Columns.Add(colId);
 
-            var colNombre = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            var colNombre = new DataGridViewTextBoxColumn();
             colNombre.Name = "Nombre";
-            colNombre.HeaderText = "Nombre";
+            colNombre.HeaderText = "Nombre de Categoría";
+            colNombre.ReadOnly = true;
             this.dgvCategorias.Columns.Add(colNombre);
 
-            // 
-            // lblCategoria
-            // 
-            this.lblCategoria.AutoSize = true;
-            this.lblCategoria.Location = new System.Drawing.Point(12, 275);
-            this.lblCategoria.Name = "lblCategoria";
-            this.lblCategoria.Size = new System.Drawing.Size(116, 15);
-            this.lblCategoria.TabIndex = 1;
+            // ========== FORM FIELDS PANEL ==========
+            Panel pnlFields = new Panel();
+            pnlFields.Dock = DockStyle.Top;
+            pnlFields.Height = 120;
+            pnlFields.BackColor = panelBg;
+            pnlFields.Padding = new Padding(15);
+            pnlFields.Margin = new Padding(0, 15, 0, 0);
+
+            // Label - MOVED TO THE RIGHT
             this.lblCategoria.Text = "Nombre de Categoría:";
+            this.lblCategoria.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.lblCategoria.ForeColor = textPrimary;
+            this.lblCategoria.Location = new Point(15, 20);
+            this.lblCategoria.Size = new Size(130, 35);
+            this.lblCategoria.TextAlign = ContentAlignment.MiddleRight;
 
-            // 
-            // txtCategoria
-            // 
-            this.txtCategoria.Location = new System.Drawing.Point(134, 272);
-            this.txtCategoria.Name = "txtCategoria";
-            this.txtCategoria.Size = new System.Drawing.Size(238, 23);
-            this.txtCategoria.TabIndex = 2;
+            // TextBox - WIDER and TALLER
+            this.txtCategoria.Font = new Font("Segoe UI", 9F);
+            this.txtCategoria.BackColor = inputBg;
+            this.txtCategoria.ForeColor = textPrimary;
+            this.txtCategoria.BorderStyle = BorderStyle.FixedSingle;
+            this.txtCategoria.Location = new Point(155, 20);
+            this.txtCategoria.Size = new Size(460, 35);
+            this.txtCategoria.PlaceholderText = "Ingrese el nombre de la categoría";
 
-            // 
-            // btnAgregar
-            // 
-            this.btnAgregar.Location = new System.Drawing.Point(12, 310);
-            this.btnAgregar.Name = "btnAgregar";
-            this.btnAgregar.Size = new System.Drawing.Size(110, 30);
-            this.btnAgregar.TabIndex = 3;
+            pnlFields.Controls.Add(this.lblCategoria);
+            pnlFields.Controls.Add(this.txtCategoria);
+
+            // ========== BUTTONS PANEL ==========
+            this.pnlButtons.Dock = DockStyle.Top;
+            this.pnlButtons.Height = 80;
+            this.pnlButtons.BackColor = formBg;
+            this.pnlButtons.Padding = new Padding(15);
+
+            int btnWidth = 130;
+            int btnHeight = 42;
+            int btnSpacing = 20;
+            int btnStartX = 15;
+
+            // Botón Agregar - Color Primario 500
             this.btnAgregar.Text = "Agregar";
-            this.btnAgregar.UseVisualStyleBackColor = true;
-            this.btnAgregar.Click += new System.EventHandler(this.btnAgregar_Click);
+            this.btnAgregar.Size = new Size(btnWidth, btnHeight);
+            this.btnAgregar.Location = new Point(btnStartX, 15);
+            this.btnAgregar.BackColor = primary500;
+            this.btnAgregar.ForeColor = Color.White;
+            this.btnAgregar.FlatStyle = FlatStyle.Flat;
+            this.btnAgregar.FlatAppearance.BorderSize = 0;
+            this.btnAgregar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.btnAgregar.Cursor = Cursors.Hand;
+            this.btnAgregar.Click += new EventHandler(this.btnAgregar_Click);
 
-            // 
-            // btnEditar
-            // 
-            this.btnEditar.Location = new System.Drawing.Point(134, 310);
-            this.btnEditar.Name = "btnEditar";
-            this.btnEditar.Size = new System.Drawing.Size(110, 30);
-            this.btnEditar.TabIndex = 4;
+            // Botón Editar - Color Secundario 500
             this.btnEditar.Text = "Editar";
-            this.btnEditar.UseVisualStyleBackColor = true;
-            this.btnEditar.Click += new System.EventHandler(this.btnEditar_Click);
+            this.btnEditar.Size = new Size(btnWidth, btnHeight);
+            this.btnEditar.Location = new Point(btnStartX + btnWidth + btnSpacing, 15);
+            this.btnEditar.BackColor = secondary500;
+            this.btnEditar.ForeColor = textPrimary;
+            this.btnEditar.FlatStyle = FlatStyle.Flat;
+            this.btnEditar.FlatAppearance.BorderSize = 0;
+            this.btnEditar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.btnEditar.Cursor = Cursors.Hand;
+            this.btnEditar.Click += new EventHandler(this.btnEditar_Click);
 
-            // 
-            // btnEliminar
-            // 
-            this.btnEliminar.Location = new System.Drawing.Point(262, 310);
-            this.btnEliminar.Name = "btnEliminar";
-            this.btnEliminar.Size = new System.Drawing.Size(110, 30);
-            this.btnEliminar.TabIndex = 5;
+            // Botón Eliminar - Color Error
             this.btnEliminar.Text = "Eliminar";
-            this.btnEliminar.UseVisualStyleBackColor = true;
-            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click);
+            this.btnEliminar.Size = new Size(btnWidth, btnHeight);
+            this.btnEliminar.Location = new Point(btnStartX + (btnWidth + btnSpacing) * 2, 15);
+            this.btnEliminar.BackColor = errorColor;
+            this.btnEliminar.ForeColor = Color.White;
+            this.btnEliminar.FlatStyle = FlatStyle.Flat;
+            this.btnEliminar.FlatAppearance.BorderSize = 0;
+            this.btnEliminar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            this.btnEliminar.Cursor = Cursors.Hand;
+            this.btnEliminar.Click += new EventHandler(this.btnEliminar_Click);
 
-            // 
-            // GestionCategoriasForm
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(384, 361);
-            this.Controls.Add(this.btnEliminar);
-            this.Controls.Add(this.btnEditar);
-            this.Controls.Add(this.btnAgregar);
-            this.Controls.Add(this.txtCategoria);
-            this.Controls.Add(this.lblCategoria);
-            this.Controls.Add(this.dgvCategorias);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.Name = "GestionCategoriasForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Gestión de Categorías";
+            this.pnlButtons.Controls.Add(this.btnAgregar);
+            this.pnlButtons.Controls.Add(this.btnEditar);
+            this.pnlButtons.Controls.Add(this.btnEliminar);
 
+            // Agregar controles al panel principal
+            this.pnlMainContainer.Controls.Add(this.dgvCategorias);
+            this.pnlMainContainer.Controls.Add(pnlFields);
+            this.pnlMainContainer.Controls.Add(this.pnlButtons);
+
+            // Agregar panel principal al formulario
+            this.Controls.Add(this.pnlMainContainer);
+
+            // ========== CLEANUP RESOURCES ==========
             ((System.ComponentModel.ISupportInitialize)(this.dgvCategorias)).EndInit();
+            this.pnlMainContainer.ResumeLayout(false);
+            this.pnlButtons.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
         }
-
-        #endregion
     }
 }

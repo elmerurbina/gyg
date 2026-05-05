@@ -373,3 +373,96 @@ END;
 $$ LANGUAGE plpgsql;
 
 SELECT * FROM producto;
+
+
+
+-- Primero, eliminar la función existente
+DROP FUNCTION IF EXISTS sp_insert_factura(INT, VARCHAR, NUMERIC, NUMERIC, JSON);
+
+-- Crear la función CORREGIDA que SÍ retorna el ID de la factura
+CREATE OR REPLACE FUNCTION sp_insert_factura(
+    p_id_cliente INT,
+    p_estado_pago VARCHAR,
+    p_total NUMERIC,
+    p_descuento NUMERIC,
+    p_detalles JSON
+)
+RETURNS INT AS $$
+DECLARE
+    nueva_factura_id INT;
+    item JSON;
+    prod_id INT;
+    cantidad INT;
+    precio_unit NUMERIC;
+    subtotal NUMERIC;
+BEGIN
+    -- Insertar la factura y guardar el ID retornado
+    INSERT INTO factura (id_cliente, estado_pago, total, descuento)
+    VALUES (p_id_cliente, p_estado_pago, p_total, p_descuento)
+    RETURNING id INTO nueva_factura_id;
+
+    -- Insertar detalle y actualizar stock
+    FOR item IN SELECT * FROM json_array_elements(p_detalles)
+    LOOP
+        prod_id := (item ->> 'id')::INT;
+        cantidad := (item ->> 'cantidad')::INT;
+        precio_unit := (item ->> 'precioUnitario')::NUMERIC;
+        subtotal := precio_unit * cantidad;
+
+        INSERT INTO factura_detalle (id_factura, id_producto, cantidad, precio_unitario, subtotal)
+        VALUES (nueva_factura_id, prod_id, cantidad, precio_unit, subtotal);
+
+        -- Restar del stock
+        UPDATE producto SET stock = stock - cantidad WHERE id = prod_id;
+    END LOOP;
+
+    -- Retornar el ID de la factura generada
+    RETURN nueva_factura_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+-- Primero, eliminar la función existente
+DROP FUNCTION IF EXISTS sp_insert_proforma(INT, NUMERIC, NUMERIC, JSON);
+
+-- Crear la función CORREGIDA
+CREATE OR REPLACE FUNCTION sp_insert_proforma(
+    p_id_cliente INT,
+    p_total NUMERIC,
+    p_descuento NUMERIC,
+    p_detalles JSON
+)
+RETURNS INT AS $$
+DECLARE
+    nueva_proforma_id INT;
+    item JSON;
+    prod_id INT;
+    cantidad INT;
+    precio_unit NUMERIC;
+    subtotal NUMERIC;
+BEGIN
+    -- Insertar la proforma y guardar el ID retornado
+    INSERT INTO proforma (id_cliente, total, descuento)
+    VALUES (p_id_cliente, p_total, p_descuento)
+    RETURNING id INTO nueva_proforma_id;
+
+    -- Recorrer cada detalle dentro del JSON
+    FOR item IN SELECT * FROM json_array_elements(p_detalles)
+    LOOP
+        prod_id := (item ->> 'Id')::INT;
+        cantidad := (item ->> 'Cantidad')::INT;
+        precio_unit := (item ->> 'PrecioUnitario')::NUMERIC;
+        subtotal := precio_unit * cantidad;
+
+        INSERT INTO proforma_detalle (id_proforma, id_producto, cantidad, precio_unitario, subtotal)
+        VALUES (nueva_proforma_id, prod_id, cantidad, precio_unit, subtotal);
+    END LOOP;
+
+    -- Retornar el ID de la proforma generada
+    RETURN nueva_proforma_id;
+END;
+$$ LANGUAGE plpgsql;
