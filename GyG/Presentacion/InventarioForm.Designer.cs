@@ -72,134 +72,277 @@ namespace GyG.Presentacion
 
             this.SuspendLayout();
 
-            // Labels and Inputs setup (name, location, size) – simplified
+            // ========== FORM BACKGROUND COLOR (Secundario 100: #FFF9E6) ==========
+            this.BackColor = Color.FromArgb(255, 249, 230);
+
+            // ========== LABELS - TALLER HEIGHT ==========
+            Font labelFont = new Font("Segoe UI", 11F, FontStyle.Bold);
+            Color labelColor = Color.FromArgb(45, 41, 38); // Gris 500
+            int labelLeft = 30;
+            int inputLeft = 250;  // MOVED INPUTS MORE TO THE RIGHT (was 140)
+            int rowGap = 65;      // More space between rows
+            
             // Name
             this.lblNombre.Text = "Nombre *:";
-            this.lblNombre.Location = new System.Drawing.Point(20, 20);
-            this.txtNombre.Location = new System.Drawing.Point(120, 20);
-            this.txtNombre.Width = 200;
+            this.lblNombre.Location = new System.Drawing.Point(labelLeft, 35);
+            this.lblNombre.Size = new System.Drawing.Size(200, 35);
+            this.lblNombre.Font = labelFont;
+            this.lblNombre.ForeColor = labelColor;
+            this.lblNombre.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtNombre.Location = new System.Drawing.Point(inputLeft, 35);
+            this.txtNombre.Width = 300;
+            this.txtNombre.Height = 42;
+            this.txtNombre.Font = new Font("Segoe UI", 12F);
+            this.txtNombre.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtNombre.ForeColor = Color.FromArgb(45, 41, 38);
 
             // Descripción
             this.lblDescripcion.Text = "Descripción *:";
-            this.lblDescripcion.Location = new System.Drawing.Point(20, 60);
-            this.txtDescripcion.Location = new System.Drawing.Point(120, 60);
-            this.txtDescripcion.Width = 200;
+            this.lblDescripcion.Location = new System.Drawing.Point(labelLeft, 35 + rowGap);
+            this.lblDescripcion.Size = new System.Drawing.Size(200, 35);
+            this.lblDescripcion.Font = labelFont;
+            this.lblDescripcion.ForeColor = labelColor;
+            this.lblDescripcion.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtDescripcion.Location = new System.Drawing.Point(inputLeft, 35 + rowGap);
+            this.txtDescripcion.Width = 300;
+            this.txtDescripcion.Height = 42;
+            this.txtDescripcion.Font = new Font("Segoe UI", 12F);
+            this.txtDescripcion.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtDescripcion.ForeColor = Color.FromArgb(45, 41, 38);
 
             // Categoría
             this.lblCategoria.Text = "Categoría (Opcional):";
-            this.lblCategoria.Location = new System.Drawing.Point(20, 100);
-            this.cmbCategoria.Location = new System.Drawing.Point(120, 100);
-            this.cmbCategoria.Width = 200;
+            this.lblCategoria.Location = new System.Drawing.Point(labelLeft, 35 + rowGap * 2);
+            this.lblCategoria.Size = new System.Drawing.Size(200, 35);
+            this.lblCategoria.Font = labelFont;
+            this.lblCategoria.ForeColor = labelColor;
+            this.lblCategoria.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.cmbCategoria.Location = new System.Drawing.Point(inputLeft, 35 + rowGap * 2);
+            this.cmbCategoria.Width = 300;
+            this.cmbCategoria.Height = 42;
+            this.cmbCategoria.Font = new Font("Segoe UI", 12F);
+            this.cmbCategoria.BackColor = Color.FromArgb(236, 236, 236);
+            this.cmbCategoria.ForeColor = Color.FromArgb(45, 41, 38);
+            this.cmbCategoria.IntegralHeight = false;
+            this.cmbCategoria.DropDownHeight = 200;
+            
             this.btnGestionarCategorias.Text = "+";
             this.btnGestionarCategorias.Click += new System.EventHandler(this.BtnGestionarCategorias_Click);
-            this.btnGestionarCategorias.Location = new System.Drawing.Point(330, 100);
+            this.btnGestionarCategorias.Location = new System.Drawing.Point(inputLeft + 310, 35 + rowGap * 2);
+            this.btnGestionarCategorias.Size = new System.Drawing.Size(50, 50);
+            this.btnGestionarCategorias.BackColor = Color.FromArgb(139, 94, 60);
+            this.btnGestionarCategorias.ForeColor = Color.White;
+            this.btnGestionarCategorias.FlatStyle = FlatStyle.Flat;
+            this.btnGestionarCategorias.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
 
             // Precio Inventario
             this.lblPrecioInv.Text = "Precio Inv. *:";
-            this.lblPrecioInv.Location = new System.Drawing.Point(20, 140);
-            this.txtPrecioInv.Location = new System.Drawing.Point(120, 140);
-            this.txtPrecioInv.Width = 200;
+            this.lblPrecioInv.Location = new System.Drawing.Point(labelLeft, 35 + rowGap * 3);
+            this.lblPrecioInv.Size = new System.Drawing.Size(200, 35);
+            this.lblPrecioInv.Font = labelFont;
+            this.lblPrecioInv.ForeColor = labelColor;
+            this.lblPrecioInv.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtPrecioInv.Location = new System.Drawing.Point(inputLeft, 35 + rowGap * 3);
+            this.txtPrecioInv.Width = 300;
+            this.txtPrecioInv.Height = 42;
+            this.txtPrecioInv.Font = new Font("Segoe UI", 12F);
+            this.txtPrecioInv.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtPrecioInv.ForeColor = Color.FromArgb(45, 41, 38);
 
             // Precio Venta
             this.lblPrecioVenta.Text = "Precio Venta *:";
-            this.lblPrecioVenta.Location = new System.Drawing.Point(20, 180);
-            this.txtPrecioVenta.Location = new System.Drawing.Point(120, 180);
-            this.txtPrecioVenta.Width = 200;
+            this.lblPrecioVenta.Location = new System.Drawing.Point(labelLeft, 35 + rowGap * 4);
+            this.lblPrecioVenta.Size = new System.Drawing.Size(200, 35);
+            this.lblPrecioVenta.Font = labelFont;
+            this.lblPrecioVenta.ForeColor = labelColor;
+            this.lblPrecioVenta.TextAlign = ContentAlignment.MiddleLeft;
             
-          
+            this.txtPrecioVenta.Location = new System.Drawing.Point(inputLeft, 35 + rowGap * 4);
+            this.txtPrecioVenta.Width = 300;
+            this.txtPrecioVenta.Height = 42;
+            this.txtPrecioVenta.Font = new Font("Segoe UI", 12F);
+            this.txtPrecioVenta.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtPrecioVenta.ForeColor = Color.FromArgb(45, 41, 38);
 
             // Stock
             this.lblStock.Text = "Stock *:";
-            this.lblStock.Location = new System.Drawing.Point(20, 220);
-            this.txtStock.Location = new System.Drawing.Point(120, 220);
-            this.txtStock.Width = 200;
+            this.lblStock.Location = new System.Drawing.Point(labelLeft, 35 + rowGap * 5);
+            this.lblStock.Size = new System.Drawing.Size(200, 35);
+            this.lblStock.Font = labelFont;
+            this.lblStock.ForeColor = labelColor;
+            this.lblStock.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtStock.Location = new System.Drawing.Point(inputLeft, 35 + rowGap * 5);
+            this.txtStock.Width = 300;
+            this.txtStock.Height = 42;
+            this.txtStock.Font = new Font("Segoe UI", 12F);
+            this.txtStock.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtStock.ForeColor = Color.FromArgb(45, 41, 38);
 
             // Código de Barra
             this.lblCodigoBarra.Text = "Código:";
-            this.lblCodigoBarra.Location = new System.Drawing.Point(20, 260);
-            this.txtCodigoBarra.Location = new System.Drawing.Point(120, 260);
-            this.txtCodigoBarra.Width = 200;
+            this.lblCodigoBarra.Location = new System.Drawing.Point(labelLeft, 35 + rowGap * 6);
+            this.lblCodigoBarra.Size = new System.Drawing.Size(200, 35);
+            this.lblCodigoBarra.Font = labelFont;
+            this.lblCodigoBarra.ForeColor = labelColor;
+            this.lblCodigoBarra.TextAlign = ContentAlignment.MiddleLeft;
             
+            this.txtCodigoBarra.Location = new System.Drawing.Point(inputLeft, 35 + rowGap * 6);
+            this.txtCodigoBarra.Width = 300;
+            this.txtCodigoBarra.Height = 42;
+            this.txtCodigoBarra.Font = new Font("Segoe UI", 12F);
+            this.txtCodigoBarra.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtCodigoBarra.ForeColor = Color.FromArgb(45, 41, 38);
+            
+            // ========== SECOND COLUMN - MOVED MORE TO THE RIGHT ==========
+            int secondLabelLeft = 580;
+            int secondInputLeft = 880;
+            
+            // IVA
             this.lblIVA.Text = "IVA (%):";
-            this.lblIVA.Location = new System.Drawing.Point(480, 140);
-            this.txtIVA.Location = new System.Drawing.Point(590, 140);
-            this.txtIVA.Width = 200;
+            this.lblIVA.Location = new System.Drawing.Point(secondLabelLeft, 35 + rowGap * 3);
+            this.lblIVA.Size = new System.Drawing.Size(300, 35);
+            this.lblIVA.Font = labelFont;
+            this.lblIVA.ForeColor = labelColor;
+            this.lblIVA.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtIVA.Location = new System.Drawing.Point(secondInputLeft, 35 + rowGap * 3);
+            this.txtIVA.Width = 300;
+            this.txtIVA.Height = 42;
+            this.txtIVA.Font = new Font("Segoe UI", 12F);
+            this.txtIVA.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtIVA.ForeColor = Color.FromArgb(45, 41, 38);
 
-// Descuento
+            // Descuento
             this.lblDescuento = new System.Windows.Forms.Label();
             this.txtDescuento = new System.Windows.Forms.TextBox();
 
             this.lblDescuento.Text = "Descuento (%):";
-            this.lblDescuento.Location = new System.Drawing.Point(480, 180);
-            this.txtDescuento.Location = new System.Drawing.Point(590, 180);
-            this.txtDescuento.Width = 200;
+            this.lblDescuento.Location = new System.Drawing.Point(secondLabelLeft, 35 + rowGap * 4);
+            this.lblDescuento.Size = new System.Drawing.Size(300, 35);
+            this.lblDescuento.Font = labelFont;
+            this.lblDescuento.ForeColor = labelColor;
+            this.lblDescuento.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtDescuento.Location = new System.Drawing.Point(secondInputLeft, 35 + rowGap * 4);
+            this.txtDescuento.Width = 250;
+            this.txtDescuento.Height = 42;
+            this.txtDescuento.Font = new Font("Segoe UI", 12F);
+            this.txtDescuento.BackColor = Color.FromArgb(236, 236, 236);
+            this.txtDescuento.ForeColor = Color.FromArgb(45, 41, 38);
             
             // Fecha de vencimiento
-            
             dtpFechaExpiracion.Name = "dtpFechaExpiracion";
-            this.lblFechaExpiracion.Text = "Fecha Exp.";
-            this.lblFechaExpiracion.Location = new Point(480, 220);
-            dtpFechaExpiracion.Location = new Point(590, 220); 
+            this.lblFechaExpiracion.Text = "Fecha Exp.:";
+            this.lblFechaExpiracion.Location = new Point(secondLabelLeft, 35 + rowGap * 5);
+            this.lblFechaExpiracion.Size = new System.Drawing.Size(200, 35);
+            this.lblFechaExpiracion.Font = labelFont;
+            this.lblFechaExpiracion.ForeColor = labelColor;
+            this.lblFechaExpiracion.TextAlign = ContentAlignment.MiddleLeft;
+            
+            dtpFechaExpiracion.Location = new Point(secondInputLeft, 35 + rowGap * 5); 
+            dtpFechaExpiracion.Width = 300;
+            dtpFechaExpiracion.Height = 42;
             dtpFechaExpiracion.Format = DateTimePickerFormat.Short;
-            dtpFechaExpiracion.ShowCheckBox = true; 
+            dtpFechaExpiracion.ShowCheckBox = true;
+            dtpFechaExpiracion.Font = new Font("Segoe UI", 12F);
+            dtpFechaExpiracion.CalendarForeColor = Color.FromArgb(45, 41, 38);
+            dtpFechaExpiracion.CalendarFont = new Font("Segoe UI", 10F);
             this.dtpFechaExpiracion.Checked = false;
 
+            // ========== BUTTONS - FIXED HEIGHT ==========
+            int buttonY = 35 + rowGap * 7 + 20;  // After last input row
+            int buttonWidth = 180;
+            int buttonHeight = 55;  // FIXED: Increased height
+            int buttonSpacing = 30;
             
-
-
-            // Botones
+            // Botón Guardar
             this.btnGuardar.Text = "Guardar";
-            this.btnGuardar.Location = new System.Drawing.Point(20, 340);
-            btnGuardar.BackColor = Color.FromArgb(40, 167, 69);
-            btnGuardar.Click += btnGuardar_Click;
-            btnGuardar.ForeColor = Color.White;
-            btnGuardar.FlatStyle = FlatStyle.Flat;
-            btnGuardar.FlatAppearance.BorderSize = 0;
+            this.btnGuardar.Location = new System.Drawing.Point(labelLeft, buttonY);
+            this.btnGuardar.Size = new System.Drawing.Size(buttonWidth, buttonHeight);
+            this.btnGuardar.BackColor = Color.FromArgb(139, 94, 60);
+            this.btnGuardar.Click += btnGuardar_Click;
+            this.btnGuardar.ForeColor = Color.White;
+            this.btnGuardar.FlatStyle = FlatStyle.Flat;
+            this.btnGuardar.FlatAppearance.BorderSize = 0;
+            this.btnGuardar.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
 
-
+            // Botón Editar
             this.btnEditar.Text = "Editar";
-            this.btnEditar.Location = new System.Drawing.Point(120, 340);
-            btnEditar.BackColor = Color.FromArgb(0, 123, 255);
-            btnEditar.Click += btnEditar_Click;
-            btnEditar.ForeColor = Color.White;
-            btnEditar.FlatStyle = FlatStyle.Flat;
-            btnEditar.FlatAppearance.BorderSize = 0;
+            this.btnEditar.Location = new System.Drawing.Point(labelLeft + buttonWidth + buttonSpacing, buttonY);
+            this.btnEditar.Size = new System.Drawing.Size(buttonWidth, buttonHeight);
+            this.btnEditar.BackColor = Color.FromArgb(255, 193, 7);
+            this.btnEditar.Click += btnEditar_Click;
+            this.btnEditar.ForeColor = Color.FromArgb(45, 41, 38);
+            this.btnEditar.FlatStyle = FlatStyle.Flat;
+            this.btnEditar.FlatAppearance.BorderSize = 0;
+            this.btnEditar.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
 
-
+            // Botón Eliminar
             this.btnEliminar.Text = "Eliminar";
-            this.btnEliminar.Location = new System.Drawing.Point(220, 340);
-            btnEliminar.BackColor = Color.FromArgb(220, 53, 69);
-            btnEliminar.Click += btnEliminar_Click;
-            btnEliminar.ForeColor = Color.White;
-            btnEliminar.FlatStyle = FlatStyle.Flat;
-            btnEliminar.FlatAppearance.BorderSize = 0;
+            this.btnEliminar.Location = new System.Drawing.Point(labelLeft + (buttonWidth + buttonSpacing) * 2, buttonY);
+            this.btnEliminar.Size = new System.Drawing.Size(buttonWidth, buttonHeight);
+            this.btnEliminar.BackColor = Color.FromArgb(211, 47, 47);
+            this.btnEliminar.Click += btnEliminar_Click;
+            this.btnEliminar.ForeColor = Color.White;
+            this.btnEliminar.FlatStyle = FlatStyle.Flat;
+            this.btnEliminar.FlatAppearance.BorderSize = 0;
+            this.btnEliminar.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
 
-            
+            // Botón Escanear QR - FIXED: Same height as other buttons (55px)
             this.btnEscanearQR.Text = "Escanear Codigo QR";
-            this.btnEscanearQR.Location = new System.Drawing.Point(120, 340);
-            btnEscanearQR.BackColor = Color.FromArgb(255, 193, 7);
-            btnEscanearQR.ForeColor = Color.White;
-            btnEscanearQR.FlatStyle = FlatStyle.Flat;
-            btnEscanearQR.FlatAppearance.BorderSize = 0;
+            this.btnEscanearQR.Location = new System.Drawing.Point(labelLeft + (buttonWidth + buttonSpacing) * 3, buttonY);
+            this.btnEscanearQR.Size = new System.Drawing.Size(200, 55);  // FIXED HEIGHT
+            this.btnEscanearQR.BackColor = Color.FromArgb(37, 211, 102);
+            this.btnEscanearQR.ForeColor = Color.White;
+            this.btnEscanearQR.FlatStyle = FlatStyle.Flat;
+            this.btnEscanearQR.FlatAppearance.BorderSize = 0;
+            this.btnEscanearQR.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
 
-
-            // DataGridView
-            this.dgvProductos.Location = new System.Drawing.Point(20, 410);
-            this.dgvProductos.Size = new System.Drawing.Size(1350, 250);
-            this.dgvProductos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvProductos.ScrollBars = ScrollBars.Both;
-            this.dgvProductos.ReadOnly = true;
-            this.dgvProductos.CellDoubleClick += new DataGridViewCellEventHandler(this.dgvProductos_CellDoubleClick);
-
-            // Buscador
+            // ========== BUSCADOR ==========
+            int searchY = buttonY + buttonHeight + 35;
             this.lblBuscar.Text = "Buscar:";
-            this.lblBuscar.Location = new System.Drawing.Point(20, 380);
-            this.txtBuscar.Location = new System.Drawing.Point(140, 380);
-            this.txtBuscar.Width = 400;
+            this.lblBuscar.Location = new System.Drawing.Point(labelLeft, searchY);
+            this.lblBuscar.Size = new System.Drawing.Size(150, 40);
+            this.lblBuscar.Font = labelFont;
+            this.lblBuscar.ForeColor = labelColor;
+            this.lblBuscar.TextAlign = ContentAlignment.MiddleLeft;
+            
+            this.txtBuscar.Location = new System.Drawing.Point(inputLeft, searchY);
+            this.txtBuscar.Width = 600;
+            this.txtBuscar.Height = 45;
+            this.txtBuscar.Font = new Font("Segoe UI", 12F);
+            this.txtBuscar.BackColor = Color.FromArgb(236, 236, 236);
             this.txtBuscar.PlaceholderText = "Buscar producto por nombre o descripcion";
             this.txtBuscar.TextChanged += new System.EventHandler(this.txtBuscar_TextChanged);
             
-            // Form
+            // ========== DATAGRIDVIEW - MOVED FURTHER DOWN ==========
+            this.dgvProductos.Location = new System.Drawing.Point(labelLeft, searchY + 65);
+            this.dgvProductos.Size = new System.Drawing.Size(2000, 320);
+            this.dgvProductos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvProductos.ScrollBars = ScrollBars.Both;
+            this.dgvProductos.ReadOnly = true;
+            this.dgvProductos.BackgroundColor = Color.FromArgb(243, 235, 225);
+            this.dgvProductos.BorderStyle = BorderStyle.FixedSingle;
+            this.dgvProductos.GridColor = Color.FromArgb(196, 164, 132);
+            this.dgvProductos.DefaultCellStyle.Font = new Font("Segoe UI", 11F);
+            this.dgvProductos.DefaultCellStyle.ForeColor = Color.FromArgb(45, 41, 38);
+            this.dgvProductos.DefaultCellStyle.BackColor = Color.FromArgb(243, 235, 225);
+            this.dgvProductos.DefaultCellStyle.SelectionBackColor = Color.FromArgb(196, 164, 132);
+            this.dgvProductos.DefaultCellStyle.SelectionForeColor = Color.FromArgb(45, 41, 38);
+            this.dgvProductos.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            this.dgvProductos.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(139, 94, 60);
+            this.dgvProductos.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            this.dgvProductos.ColumnHeadersHeight = 50;
+            this.dgvProductos.RowTemplate.Height = 38;
+            this.dgvProductos.EnableHeadersVisualStyles = false;
+            this.dgvProductos.CellDoubleClick += new DataGridViewCellEventHandler(this.dgvProductos_CellDoubleClick);
+
+            // Form - Add all controls
             this.Controls.Add(this.lblNombre);
             this.Controls.Add(this.txtNombre);
             this.Controls.Add(this.lblDescripcion);
@@ -229,20 +372,17 @@ namespace GyG.Presentacion
             this.Controls.Add(this.txtIVA);
             this.Controls.Add(this.lblDescuento);
             this.Controls.Add(this.txtDescuento);
+            this.Controls.Add(this.btnEscanearQR);
 
-
-
-            this.Text = "Gestión de Inventario - Negocio+";
+            // Form settings
+            this.Text = "Gestión de Inventario - Sacuanjoche";
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.ClientSize = new System.Drawing.Size(1410, 680);
+            this.ClientSize = new System.Drawing.Size(2100, 1040);
 
             this.Load += new System.EventHandler(this.InventarioForm_Load);
             this.ResumeLayout(false);
         }
         
-        
-        
-
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))

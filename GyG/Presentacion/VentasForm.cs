@@ -213,7 +213,7 @@ namespace GyG.Presentacion
                 decimal iva = precio * (numIVA.Value / 100);
                 decimal descuento = precio * (numDescuento.Value / 100);
                 decimal precioFinal = precio + iva - descuento;
-                txtSubtotal.Text = precioFinal.ToString("C2");
+                txtSubtotal.Text = $"C${precioFinal:F2}";
             }
             else
             {
@@ -348,44 +348,44 @@ namespace GyG.Presentacion
         }
 
 
-        private void RefrescarCarrito()
+      private void RefrescarCarrito()
+{
+    dgvCarrito.CellValueChanged -= DgvCarrito_CellValueChanged;
+    dgvCarrito.CellContentClick -= DgvCarrito_CellContentClick;
+    dgvCarrito.CellEndEdit -= DgvCarrito_CellEndEdit;
+
+    dgvCarrito.Rows.Clear();
+
+    foreach (var c in carrito)
+    {
+        dgvCarrito.Rows.Add(c.Id, c.Nombre, c.Descripcion ?? "", 
+            $"C${c.PrecioUnitario:F2}",
+            c.IVA, c.Descuento, c.Cantidad,
+            $"C${c.Subtotal:F2}");
+    }
+
+    // CORREGIDO: Mostrar TOTAL con C$
+    decimal totalGeneral = carrito.Sum(c => c.Subtotal);
+    lblTotal.Text = $"TOTAL: C${totalGeneral:F2}";
+
+    foreach (DataGridViewRow row in dgvCarrito.Rows)
+    {
+        var cell = row.Cells["Eliminar"] as DataGridViewButtonCell;
+        if (cell != null)
         {
-            dgvCarrito.CellValueChanged -= DgvCarrito_CellValueChanged;
-            dgvCarrito.CellContentClick -= DgvCarrito_CellContentClick;
-            dgvCarrito.CellEndEdit -= DgvCarrito_CellEndEdit;
-
-            dgvCarrito.Rows.Clear();
-
-            foreach (var c in carrito)
-            {
-                dgvCarrito.Rows.Add(c.Id, c.Nombre, c.Descripcion ?? "", 
-                    c.PrecioUnitario.ToString("C2"),
-                    c.IVA, c.Descuento, c.Cantidad,
-                    c.Subtotal.ToString("C2"));
-            }
-
-            lblTotal.Text = "Total: " + carrito.Sum(c => c.Subtotal).ToString("C2");
-
-            foreach (DataGridViewRow row in dgvCarrito.Rows)
-            {
-                var cell = row.Cells["Eliminar"] as DataGridViewButtonCell;
-                if (cell != null)
-                {
-                    cell.Style.BackColor = Color.Red;
-                    cell.Style.ForeColor = Color.White;
-                    cell.Style.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-                }
-            }
-
-            
-            lblItemsCarrito.Text = $"🛒 {carrito.Sum(c => c.Cantidad)} item(s)";
-
-
-            
-            dgvCarrito.CellValueChanged += DgvCarrito_CellValueChanged;
-            dgvCarrito.CellContentClick += DgvCarrito_CellContentClick;
-            dgvCarrito.CellEndEdit += DgvCarrito_CellEndEdit;
+            cell.Style.BackColor = Color.Red;
+            cell.Style.ForeColor = Color.White;
+            cell.Style.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
         }
+    }
+
+    lblItemsCarrito.Text = $"🛒 {carrito.Sum(c => c.Cantidad)} item(s)";
+
+    dgvCarrito.CellValueChanged += DgvCarrito_CellValueChanged;
+    dgvCarrito.CellContentClick += DgvCarrito_CellContentClick;
+    dgvCarrito.CellEndEdit += DgvCarrito_CellEndEdit;
+}
+
 
         private void ConfigurarColumnasCarrito()
         {
@@ -524,7 +524,7 @@ namespace GyG.Presentacion
             // Generar y guardar factura en PDF
             using (var conn = Conexion.ObtenerConexion())
             {
-                GenerarYGuardarPDFFactura(idFacturaGenerada, conn.ConnectionString);
+                 GenerarYGuardarPDFFactura(idFacturaGenerada, "");
             }
 
             LimpiarTodo(); // Limpia carrito, cliente, etc.
@@ -657,7 +657,7 @@ namespace GyG.Presentacion
         doc.Open();
 
         // Cabecera
-        var titulo = new iTextParagraph("Ferretería GyG\nPROFORMA",
+        var titulo = new iTextParagraph("Peleteria Sacuanjoche\nPROFORMA",
             iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
         titulo.Alignment = iTextElement.ALIGN_CENTER;
         doc.Add(titulo);
@@ -778,7 +778,8 @@ namespace GyG.Presentacion
 }
 
    
-   public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
+   
+public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
 {
     byte[] pdfBytes;
 
@@ -793,18 +794,16 @@ namespace GyG.Presentacion
             iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
         titulo.Alignment = iTextElement.ALIGN_CENTER;
         doc.Add(titulo);
-        doc.Add(new iTextParagraph(" ")); // Espacio
+        doc.Add(new iTextParagraph(" "));
 
         // Variables para cliente y factura
         string clienteNombre = "", telefonoCliente = "", fecha = "", estadoPago = "";
         decimal total = 0;
         DataTable productos = new DataTable();
 
-        // Obtener datos de factura y productos
-        using (var conn = new NpgsqlConnection(connectionString))
+        // ✅ CORREGIDO: Usar Conexion.ObtenerConexion() en lugar de new NpgsqlConnection
+        using (var conn = Conexion.ObtenerConexion())
         {
-            conn.Open();
-
             // Datos generales factura
             using (var cmd = new NpgsqlCommand(@"
                 SELECT c.nombre, c.telefono, f.total, f.fecha, f.estado_pago
@@ -818,7 +817,7 @@ namespace GyG.Presentacion
                     if (reader.Read())
                     {
                         clienteNombre = reader.GetString(0);
-                        telefonoCliente = reader.GetString(1);
+                        telefonoCliente = reader.IsDBNull(1) ? "" : reader.GetString(1);
                         total = reader.GetDecimal(2);
                         fecha = reader.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
                         estadoPago = reader.GetString(4);
@@ -827,21 +826,24 @@ namespace GyG.Presentacion
             }
 
             // Detalle de productos
-            using (var da = new NpgsqlDataAdapter(@"
+            using (var cmd = new NpgsqlCommand(@"
                 SELECT 
                     prod.nombre AS producto,
-                    prod.descripcion,
+                    COALESCE(prod.descripcion, '') as descripcion,
                     d.cantidad,
                     d.precio_unitario,
-                    prod.iva,
-                    prod.descuento,
+                    COALESCE(prod.iva, 0) as iva,
+                    COALESCE(prod.descuento, 0) as descuento,
                     d.subtotal
                 FROM factura_detalle d
                 JOIN producto prod ON d.id_producto = prod.id
                 WHERE d.id_factura = @id", conn))
             {
-                da.SelectCommand.Parameters.AddWithValue("@id", idFactura);
-                da.Fill(productos);
+                cmd.Parameters.AddWithValue("@id", idFactura);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    productos.Load(reader);
+                }
             }
         }
 
@@ -877,17 +879,17 @@ namespace GyG.Presentacion
             table.AddCell(row["producto"].ToString());
             table.AddCell(row["descripcion"].ToString());
             table.AddCell(cantidad.ToString());
-            table.AddCell($"${precio:F2}");
+            table.AddCell($"C${precio:F2}");
             table.AddCell($"{iva}%");
             table.AddCell($"{descuento}%");
-            table.AddCell($"${subtotal:F2}");
+            table.AddCell($"C${subtotal:F2}");
         }
 
         doc.Add(table);
         doc.Add(new iTextParagraph(" "));
 
         // Total
-        doc.Add(new iTextParagraph($"TOTAL: ${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
+        doc.Add(new iTextParagraph($"TOTAL: C${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
         doc.Add(new iTextParagraph(" "));
 
         // Líneas de firma y texto
@@ -895,19 +897,16 @@ namespace GyG.Presentacion
         float yLinea = doc.BottomMargin + 50;
         float anchoLinea = 60;
 
-        // Línea izquierda - "Entregué Conforme"
         float xEntregue = doc.LeftMargin;
         cb.MoveTo(xEntregue, yLinea);
         cb.LineTo(xEntregue + anchoLinea, yLinea);
         cb.Stroke();
 
-        // Línea derecha - "Recibí Conforme"
         float xRecibi = doc.PageSize.Width - doc.RightMargin - anchoLinea;
         cb.MoveTo(xRecibi, yLinea);
         cb.LineTo(xRecibi + anchoLinea, yLinea);
         cb.Stroke();
 
-        // Texto debajo de líneas
         BaseFont bf = BaseFont.CreateFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
         cb.BeginText();
         cb.SetFontAndSize(bf, 10);
@@ -915,7 +914,6 @@ namespace GyG.Presentacion
         cb.ShowTextAligned(Element.ALIGN_CENTER, "Recibí Conforme", xRecibi + anchoLinea / 2, yLinea - 12, 0);
         cb.EndText();
 
-        // Mensaje final
         doc.Add(new iTextParagraph(" "));
         doc.Add(new iTextParagraph("Gracias por su compra.",
             iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_OBLIQUE, 12)));
@@ -924,10 +922,9 @@ namespace GyG.Presentacion
         pdfBytes = ms.ToArray();
     }
 
-    // Guardar en base de datos y abrir el PDF
-    using (var conn = new NpgsqlConnection(connectionString))
+    // ✅ CORREGIDO: Usar Conexion.ObtenerConexion() también para guardar
+    using (var conn = Conexion.ObtenerConexion())
     {
-        conn.Open();
         using (var cmd = new NpgsqlCommand(@"
             INSERT INTO archivo_pdf(nombre_archivo, tipo, contenido)
             VALUES (@nombre, @tipo, @contenido)", conn))
@@ -947,12 +944,7 @@ namespace GyG.Presentacion
             UseShellExecute = true
         });
     }
-}
-
-
-
-
-        private void LimpiarTodo()
+}        private void LimpiarTodo()
         {
             carrito.Clear();
             RefrescarCarrito();

@@ -21,10 +21,10 @@ namespace GyG.Presentacion
             // 
             // MainForm
             // 
-            this.ClientSize = new System.Drawing.Size(1000, 700);
+            this.ClientSize = new System.Drawing.Size(10000, 7000);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.IsMdiContainer = true;
-            this.Text = "GyG - Sistema de Gestión";
+            this.Text = "Peleteria Sacuanjoche";
             
             // 
             // Header

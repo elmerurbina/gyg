@@ -6,7 +6,7 @@ namespace GyG.Datos
 {
     public class Conexion
     {
-        private static readonly string connectionString = "Host=localhost;Port=5432;Username=postgres;Password=;Database=gyg";
+        private static readonly string connectionString = "Host=localhost;Port=5432;Username=postgres;Password=fped7226;Database=sacuanjoche";
 
         public static NpgsqlConnection ObtenerConexion()
         {
