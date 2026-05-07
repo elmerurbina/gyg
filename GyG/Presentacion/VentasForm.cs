@@ -790,7 +790,7 @@ public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
         doc.Open();
 
         // Cabecera
-        var titulo = new iTextParagraph("FERRETERÍA GyG\nFACTURA",
+        var titulo = new iTextParagraph("PELETERIA SACUANJOCHE\nFACTURA",
             iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
         titulo.Alignment = iTextElement.ALIGN_CENTER;
         doc.Add(titulo);
