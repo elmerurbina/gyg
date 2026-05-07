@@ -25,7 +25,7 @@ namespace GyG.Presentacion.Controles
                 "Proformas", 
                 "Pedidos", 
                 "Contabilidad", 
-                "Graficos", 
+                "Gráficos", 
                 "Clientes"
             };
 
