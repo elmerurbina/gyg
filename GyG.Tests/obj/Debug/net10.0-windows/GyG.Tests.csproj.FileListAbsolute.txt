@@ -1,0 +1,7 @@
+C:\Users\LEGION\gyg\GyG.tests\bin\Debug\net10.0-windows\.msCoverageSourceRootsMapping_GyG.Tests
+C:\Users\LEGION\gyg\GyG.tests\obj\Debug\net10.0-windows\GyG.Tests.csproj.AssemblyReference.cache
+C:\Users\LEGION\gyg\GyG.tests\obj\Debug\net10.0-windows\GyG.Tests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\LEGION\gyg\GyG.tests\obj\Debug\net10.0-windows\GyG.Tests.AssemblyInfoInputs.cache
+C:\Users\LEGION\gyg\GyG.tests\obj\Debug\net10.0-windows\GyG.Tests.AssemblyInfo.cs
+C:\Users\LEGION\gyg\GyG.tests\obj\Debug\net10.0-windows\GyG.Tests.csproj.CoreCompileInputs.cache
+C:\Users\LEGION\gyg\GyG.tests\obj\Debug\net10.0-windows\GyG.Tests.sourcelink.json

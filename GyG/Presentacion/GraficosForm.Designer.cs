@@ -20,9 +20,20 @@ namespace GyG.Presentacion
         private Button btnAnteriorPagina;
         private Button btnSiguientePagina;
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
         private void InitializeComponent()
         {
-            this.panelGraficosScrollable = new Panel();
+            this.components = new Container();
+            
+            // Crear los charts explícitamente
             this.chartMasVendidos = new Chart();
             this.chartMenosVendidos = new Chart();
             this.chartRentabilidad = new Chart();
@@ -30,7 +41,8 @@ namespace GyG.Presentacion
             this.chartClientesMayoresCompras = new Chart();
             this.chartClientesContado = new Chart();
             this.chartFechasMasVentas = new Chart();
-
+            
+            this.panelGraficosScrollable = new Panel();
             this.btnAnteriorPagina = new Button();
             this.btnSiguientePagina = new Button();
 
@@ -45,26 +57,38 @@ namespace GyG.Presentacion
             this.panelGraficosScrollable.SuspendLayout();
             this.SuspendLayout();
 
+            // ========== PALETA SACUANJOCHE ==========
+            this.BackColor = Color.FromArgb(255, 249, 230);
+            
             // 
             // panelGraficosScrollable
             // 
             this.panelGraficosScrollable.AutoScroll = true;
-            this.panelGraficosScrollable.Location = new System.Drawing.Point(10, 10);
-            this.panelGraficosScrollable.Name = "panelGraficosScrollable";
-            this.panelGraficosScrollable.Size = new System.Drawing.Size(940, 560);
-            this.panelGraficosScrollable.TabIndex = 0;
-
+            this.panelGraficosScrollable.BackColor = Color.FromArgb(255, 249, 230);
+            this.panelGraficosScrollable.Dock = DockStyle.Fill;
+            this.panelGraficosScrollable.Location = new Point(10, 10);
+            this.panelGraficosScrollable.Size = new Size(940, 560);
+            
             // Helper para configurar los charts
             void ConfigurarChart(Chart chart, string titulo)
             {
-                chart.Size = new System.Drawing.Size(450, 250);
+                chart.Size = new Size(450, 250);
                 chart.ChartAreas.Clear();
                 chart.Legends.Clear();
-
+                
+                chart.Anchor = AnchorStyles.None;
+                chart.BackColor = Color.FromArgb(243, 235, 225);
+                chart.BorderlineColor = Color.FromArgb(196, 164, 132);
+                chart.BorderlineWidth = 1;
+                
                 var area = new ChartArea("ChartArea1");
+                area.BackColor = Color.FromArgb(255, 249, 230);
+                area.AxisX.LabelStyle.Font = new Font("Segoe UI", 8F);
+                area.AxisY.LabelStyle.Font = new Font("Segoe UI", 8F);
                 chart.ChartAreas.Add(area);
 
                 var legend = new Legend("Legend1");
+                legend.BackColor = Color.Transparent;
                 chart.Legends.Add(legend);
 
                 chart.Name = titulo.Replace(" ", "");
@@ -75,20 +99,19 @@ namespace GyG.Presentacion
             ConfigurarChart(chartMasVendidos, "Productos Más Vendidos");
             ConfigurarChart(chartMenosVendidos, "Productos Menos Vendidos");
             ConfigurarChart(chartRentabilidad, "Rentabilidad por Producto");
-            ConfigurarChart(chartHistorialVentas, "Historial y Proyección de Ventas");
+            ConfigurarChart(chartHistorialVentas, "Historial de Ventas");
             ConfigurarChart(chartClientesMayoresCompras, "Clientes con Mayores Compras");
             ConfigurarChart(chartClientesContado, "Clientes que Pagan al Contado");
             ConfigurarChart(chartFechasMasVentas, "Fechas con Más Ventas");
 
-            // Añadimos todos los charts al panel (posiciones iniciales fijas)
-            // La visibilidad se controlará desde el código
-            this.chartMasVendidos.Location = new System.Drawing.Point(10, 10);
-            this.chartMenosVendidos.Location = new System.Drawing.Point(480, 10);
-            this.chartRentabilidad.Location = new System.Drawing.Point(10, 270);
-            this.chartHistorialVentas.Location = new System.Drawing.Point(480, 270);
-            this.chartClientesMayoresCompras.Location = new System.Drawing.Point(10, 10);  // mismo lugar que chartMasVendidos
-            this.chartClientesContado.Location = new System.Drawing.Point(480, 10);        // mismo lugar que chartMenosVendidos
-            this.chartFechasMasVentas.Location = new System.Drawing.Point(10, 270);       // mismo lugar que chartRentabilidad
+            // Posiciones
+            this.chartMasVendidos.Location = new Point(10, 10);
+            this.chartMenosVendidos.Location = new Point(480, 10);
+            this.chartRentabilidad.Location = new Point(10, 270);
+            this.chartHistorialVentas.Location = new Point(480, 270);
+            this.chartClientesMayoresCompras.Location = new Point(10, 530);
+            this.chartClientesContado.Location = new Point(480, 530);
+            this.chartFechasMasVentas.Location = new Point(10, 790);
 
             // Agregar charts al panel
             this.panelGraficosScrollable.Controls.Add(this.chartMasVendidos);
@@ -99,35 +122,19 @@ namespace GyG.Presentacion
             this.panelGraficosScrollable.Controls.Add(this.chartClientesContado);
             this.panelGraficosScrollable.Controls.Add(this.chartFechasMasVentas);
 
-            // 
-            // btnAnteriorPagina
-            // 
-            this.btnAnteriorPagina.Location = new System.Drawing.Point(300, 580);
-            this.btnAnteriorPagina.Name = "btnAnteriorPagina";
-            this.btnAnteriorPagina.Size = new System.Drawing.Size(120, 30);
-            this.btnAnteriorPagina.Text = "Anterior";
-            this.btnAnteriorPagina.UseVisualStyleBackColor = true;
-            // El evento lo asignarás en el form.cs
-
-            // 
-            // btnSiguientePagina
-            // 
-            this.btnSiguientePagina.Location = new System.Drawing.Point(520, 580);
-            this.btnSiguientePagina.Name = "btnSiguientePagina";
-            this.btnSiguientePagina.Size = new System.Drawing.Size(120, 30);
-            this.btnSiguientePagina.Text = "Siguiente";
-            this.btnSiguientePagina.UseVisualStyleBackColor = true;
-            // El evento lo asignarás en el form.cs
+            // Botones de navegación (opcionales, puedes quitarlos)
+            this.btnAnteriorPagina.Visible = false;
+            this.btnSiguientePagina.Visible = false;
 
             // 
             // GraficosForm
             // 
-            this.ClientSize = new System.Drawing.Size(960, 630);
+            this.ClientSize = new Size(960, 630);
             this.Controls.Add(this.panelGraficosScrollable);
-            this.Controls.Add(this.btnAnteriorPagina);
-            this.Controls.Add(this.btnSiguientePagina);
             this.Name = "GraficosForm";
-            this.Text = "Reportes Gráficos de Ventas";
+            this.Text = "Reportes Gráficos - Sacuanjoche";
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.WindowState = FormWindowState.Normal;
 
             ((ISupportInitialize)(this.chartMasVendidos)).EndInit();
             ((ISupportInitialize)(this.chartMenosVendidos)).EndInit();

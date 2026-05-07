@@ -148,26 +148,37 @@ namespace GyG.Presentacion
 
 
 
-        private void Sidebar_OpcionSeleccionada(object sender, string opcion)
+       private void Sidebar_OpcionSeleccionada(object sender, string opcion)
+{
+    try
+    {
+        Form ventana = opcion switch
         {
-            Form ventana = opcion switch
-            {
-                "Inventario" => new InventarioForm(),
-                "Ventas" => new VentasForm(),
-                "Proformas" => new ProformaForm(),
-                "Pedidos" => new PedidosForm(),
-                "Contabilidad" => new ContabilidadForm(),
-                "Gráficos" => new GraficosForm(),
-                "Clientes" => new ClienteForm(),
-                _ => null
-            };
+            "Inventario" => new InventarioForm(),
+            "Ventas" => new VentasForm(),
+            "Proformas" => new ProformaForm(),
+            "Pedidos" => new PedidosForm(),
+            "Contabilidad" => new ContabilidadForm(),
+            "Gráficos" => new GraficosForm(),
+            "Clientes" => new ClienteForm(),
+            _ => null
+        };
 
-            if (ventana != null)
-            {
-                ventana.StartPosition = FormStartPosition.CenterScreen;
-                ventana.Show(); // o ventana.ShowDialog() si querés modal
-            }
+        if (ventana != null)
+        {
+            ventana.StartPosition = FormStartPosition.CenterScreen;
+            ventana.WindowState = FormWindowState.Normal;
+            ventana.ShowDialog(); // Usar ShowDialog para que sea modal
+            
+            // O si prefieres que no sea modal:
+            // ventana.Show();
         }
-        
+    }
+    catch (Exception ex)
+    {
+        MessageBox.Show($"Error al abrir {opcion}: {ex.Message}", "Error", 
+            MessageBoxButtons.OK, MessageBoxIcon.Error);
+    }
+}
     }
 }
