@@ -19,7 +19,6 @@ namespace GyG.Tests
         {
             var form = new InventarioForm();
             Assert.NotNull(form);
-            // CORREGIDO: Ahora espera "Sacuanjoche" en lugar de "Negocio+"
             Assert.Equal("Gestión de Inventario - Sacuanjoche", form.Text);
         }
 

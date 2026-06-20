@@ -524,7 +524,8 @@ namespace GyG.Presentacion
             // Generar y guardar factura en PDF
             using (var conn = Conexion.ObtenerConexion())
             {
-                 GenerarYGuardarPDFFactura(idFacturaGenerada, "");
+                // Generar y guardar factura en PDF
+                GenerarYGuardarPDFFactura(idFacturaGenerada);
             }
 
             LimpiarTodo(); // Limpia carrito, cliente, etc.
@@ -779,34 +780,86 @@ namespace GyG.Presentacion
 
    
    
-public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
+public void GenerarYGuardarPDFFactura(int idFactura)
 {
     byte[] pdfBytes;
 
     using (MemoryStream ms = new MemoryStream())
     {
-        iTextDocument doc = new iTextDocument(iTextPageSize.A4, 50, 50, 50, 50);
+        iTextDocument doc = new iTextDocument(iTextPageSize.A4, 40, 40, 40, 40);
         iTextPdfWriter writer = iTextPdfWriter.GetInstance(doc, ms);
         doc.Open();
 
-        // Cabecera
-        var titulo = new iTextParagraph("PELETERIA SACUANJOCHE\nFACTURA",
-            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 20));
-        titulo.Alignment = iTextElement.ALIGN_CENTER;
-        doc.Add(titulo);
+        // Sacuanjoche Color Palette
+        BaseColor primary500 = new BaseColor(139, 94, 60);
+        BaseColor borderColor = new BaseColor(196, 164, 132);
+        BaseColor headerBg = new BaseColor(248, 241, 229);
+        BaseColor footerBg = new BaseColor(243, 235, 225);
+
+        // Header with Logo
+        string logoPath = @"GyG\Resources\logo.png";
+        if (File.Exists(logoPath))
+        {
+            iTextSharp.text.Image logo = iTextSharp.text.Image.GetInstance(logoPath);
+            logo.ScaleToFit(80, 80);
+            logo.Alignment = iTextElement.ALIGN_CENTER;
+            doc.Add(logo);
+        }
+
+        iTextParagraph businessName = new iTextParagraph("PELETERÍA SACUANJOCHE",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 18));
+        businessName.Alignment = iTextElement.ALIGN_CENTER;
+        businessName.Font.Color = primary500;
+        doc.Add(businessName);
+
+        iTextParagraph ownerInfo = new iTextParagraph("Juan Miguel Zúñiga García",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10));
+        ownerInfo.Alignment = iTextElement.ALIGN_CENTER;
+        doc.Add(ownerInfo);
+
+        iTextParagraph rucInfo = new iTextParagraph("RUC: 3620811950003W",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10));
+        rucInfo.Alignment = iTextElement.ALIGN_CENTER;
+        doc.Add(rucInfo);
+
+        iTextParagraph contactInfo = new iTextParagraph("Tel: 2549-2282 / Cel: 8660-5408",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10));
+        contactInfo.Alignment = iTextElement.ALIGN_CENTER;
+        doc.Add(contactInfo);
+
+        iTextParagraph addressInfo = new iTextParagraph("Dir: Iglesia Medalla Milagrosa 3 C al este. Camoa, Boaco",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10));
+        addressInfo.Alignment = iTextElement.ALIGN_CENTER;
+        doc.Add(addressInfo);
+
+        // Separator line
+        LineSeparator line = new LineSeparator(1f, 100f, borderColor, iTextElement.ALIGN_CENTER, 0);
+        doc.Add(line);
+
+        iTextParagraph title = new iTextParagraph("FACTURA CUOTA FIJA CONTADO SERIE \"A\"",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14));
+        title.Alignment = iTextElement.ALIGN_CENTER;
+        title.Font.Color = primary500;
+        doc.Add(title);
+
         doc.Add(new iTextParagraph(" "));
 
-        // Variables para cliente y factura
-        string clienteNombre = "", telefonoCliente = "", fecha = "", estadoPago = "";
-        decimal total = 0;
+        // Variables for data
+        string clienteNombre = "", telefonoCliente = "", ubicacionCliente = "";
+        string fecha = "";
+        decimal total = 0, descuentoTotal = 0;
         DataTable productos = new DataTable();
 
-        // ✅ CORREGIDO: Usar Conexion.ObtenerConexion() en lugar de new NpgsqlConnection
         using (var conn = Conexion.ObtenerConexion())
         {
-            // Datos generales factura
             using (var cmd = new NpgsqlCommand(@"
-                SELECT c.nombre, c.telefono, f.total, f.fecha, f.estado_pago
+                SELECT 
+                    c.nombre, 
+                    COALESCE(c.telefono, '') as telefono,
+                    COALESCE(c.ubicacion, '') as ubicacion,
+                    f.total, 
+                    f.fecha,
+                    COALESCE(f.descuento, 0) as descuento
                 FROM factura f
                 JOIN cliente c ON f.id_cliente = c.id
                 WHERE f.id = @id", conn))
@@ -817,15 +870,15 @@ public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
                     if (reader.Read())
                     {
                         clienteNombre = reader.GetString(0);
-                        telefonoCliente = reader.IsDBNull(1) ? "" : reader.GetString(1);
-                        total = reader.GetDecimal(2);
-                        fecha = reader.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
-                        estadoPago = reader.GetString(4);
+                        telefonoCliente = reader.GetString(1);
+                        ubicacionCliente = reader.GetString(2);
+                        total = reader.GetDecimal(3);
+                        fecha = reader.GetDateTime(4).ToString("dd/MM/yyyy HH:mm");
+                        descuentoTotal = reader.GetDecimal(5);
                     }
                 }
             }
 
-            // Detalle de productos
             using (var cmd = new NpgsqlCommand(@"
                 SELECT 
                     prod.nombre AS producto,
@@ -847,82 +900,262 @@ public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
             }
         }
 
-        // Información del cliente y factura
-        doc.Add(new iTextParagraph($"N° Factura: {idFactura}"));
-        doc.Add(new iTextParagraph($"Cliente: {clienteNombre}"));
-        doc.Add(new iTextParagraph($"Teléfono: {telefonoCliente}"));
-        doc.Add(new iTextParagraph($"Fecha: {fecha}"));
-        doc.Add(new iTextParagraph($"Estado de Pago: {estadoPago}"));
+        // Client Information Table
+        PdfPTable clientTable = new PdfPTable(2);
+        clientTable.WidthPercentage = 100;
+        clientTable.SetWidths(new float[] { 25f, 75f });
+        clientTable.SpacingBefore = 5f;
+        clientTable.SpacingAfter = 10f;
+
+        // Cliente row
+        PdfPCell clienteLabelCell = new PdfPCell(new iTextParagraph("Cliente:",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 11)));
+        clienteLabelCell.Border = iTextRectangle.NO_BORDER;
+        clienteLabelCell.BackgroundColor = headerBg;
+        clienteLabelCell.Padding = 5;
+        clientTable.AddCell(clienteLabelCell);
+
+        PdfPCell clienteValueCell = new PdfPCell(new iTextParagraph(clienteNombre,
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 11)));
+        clienteValueCell.Border = iTextRectangle.NO_BORDER;
+        clienteValueCell.BackgroundColor = headerBg;
+        clienteValueCell.Padding = 5;
+        clientTable.AddCell(clienteValueCell);
+
+        // Telefono row
+        PdfPCell telefonoLabelCell = new PdfPCell(new iTextParagraph("Teléfono:",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 11)));
+        telefonoLabelCell.Border = iTextRectangle.NO_BORDER;
+        telefonoLabelCell.BackgroundColor = footerBg;
+        telefonoLabelCell.Padding = 5;
+        clientTable.AddCell(telefonoLabelCell);
+
+        PdfPCell telefonoValueCell = new PdfPCell(new iTextParagraph(telefonoCliente,
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 11)));
+        telefonoValueCell.Border = iTextRectangle.NO_BORDER;
+        telefonoValueCell.BackgroundColor = footerBg;
+        telefonoValueCell.Padding = 5;
+        clientTable.AddCell(telefonoValueCell);
+
+        // Direccion row
+        PdfPCell direccionLabelCell = new PdfPCell(new iTextParagraph("Dirección:",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 11)));
+        direccionLabelCell.Border = iTextRectangle.NO_BORDER;
+        direccionLabelCell.BackgroundColor = footerBg;
+        direccionLabelCell.Padding = 5;
+        clientTable.AddCell(direccionLabelCell);
+
+        PdfPCell direccionValueCell = new PdfPCell(new iTextParagraph(ubicacionCliente,
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 11)));
+        direccionValueCell.Border = iTextRectangle.NO_BORDER;
+        direccionValueCell.BackgroundColor = footerBg;
+        direccionValueCell.Padding = 5;
+        clientTable.AddCell(direccionValueCell);
+
+        doc.Add(clientTable);
+
+        iTextParagraph invoiceInfo = new iTextParagraph($"Factura N°: {idFactura}      Fecha: {fecha}",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10));
+        invoiceInfo.Alignment = iTextElement.ALIGN_RIGHT;
+        doc.Add(invoiceInfo);
         doc.Add(new iTextParagraph(" "));
 
-        // Tabla de productos
-        iTextPdfPTable table = new iTextPdfPTable(7);
-        table.WidthPercentage = 100;
-        table.SetWidths(new float[] { 20, 25, 10, 10, 10, 10, 15 });
+        // Products Table
+        PdfPTable productTable = new PdfPTable(6);
+        productTable.WidthPercentage = 100;
+        productTable.SetWidths(new float[] { 10f, 30f, 15f, 10f, 10f, 25f });
 
-        table.AddCell("Producto");
-        table.AddCell("Descripción");
-        table.AddCell("Cant.");
-        table.AddCell("Precio");
-        table.AddCell("IVA");
-        table.AddCell("Desc.");
-        table.AddCell("Subtotal");
+        string[] headers = { "CANT.", "DESCRIPCION", "P. UNIT.", "IVA%", "DESC%", "VALOR" };
+        foreach (string header in headers)
+        {
+            PdfPCell headerCell = new PdfPCell(new iTextParagraph(header,
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 10)));
+            headerCell.BackgroundColor = primary500;
+            headerCell.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+            headerCell.Padding = 8;
+            headerCell.BorderColor = borderColor;
+            productTable.AddCell(headerCell);
+        }
 
         foreach (DataRow row in productos.Rows)
         {
-            decimal precio = Convert.ToDecimal(row["precio_unitario"]);
             int cantidad = Convert.ToInt32(row["cantidad"]);
+            string producto = row["producto"].ToString();
+            string descripcion = row["descripcion"].ToString();
+            decimal precio = Convert.ToDecimal(row["precio_unitario"]);
             decimal iva = Convert.ToDecimal(row["iva"]);
             decimal descuento = Convert.ToDecimal(row["descuento"]);
             decimal subtotal = Convert.ToDecimal(row["subtotal"]);
 
-            table.AddCell(row["producto"].ToString());
-            table.AddCell(row["descripcion"].ToString());
-            table.AddCell(cantidad.ToString());
-            table.AddCell($"C${precio:F2}");
-            table.AddCell($"{iva}%");
-            table.AddCell($"{descuento}%");
-            table.AddCell($"C${subtotal:F2}");
+            PdfPCell cantCell = new PdfPCell(new iTextParagraph(cantidad.ToString(),
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+            cantCell.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+            cantCell.Padding = 6;
+            cantCell.BorderColor = borderColor;
+            productTable.AddCell(cantCell);
+
+            PdfPCell descCell = new PdfPCell(new iTextParagraph($"{producto}\n{descripcion}",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+            descCell.HorizontalAlignment = iTextElement.ALIGN_LEFT;
+            descCell.Padding = 6;
+            descCell.BorderColor = borderColor;
+            productTable.AddCell(descCell);
+
+            PdfPCell precioCell = new PdfPCell(new iTextParagraph($"C${precio:F2}",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+            precioCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+            precioCell.Padding = 6;
+            precioCell.BorderColor = borderColor;
+            productTable.AddCell(precioCell);
+
+            PdfPCell ivaCell = new PdfPCell(new iTextParagraph($"{iva}%",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+            ivaCell.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+            ivaCell.Padding = 6;
+            ivaCell.BorderColor = borderColor;
+            productTable.AddCell(ivaCell);
+
+            PdfPCell descuentoCell = new PdfPCell(new iTextParagraph($"{descuento}%",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+            descuentoCell.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+            descuentoCell.Padding = 6;
+            descuentoCell.BorderColor = borderColor;
+            productTable.AddCell(descuentoCell);
+
+            PdfPCell subtotalCell = new PdfPCell(new iTextParagraph($"C${subtotal:F2}",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+            subtotalCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+            subtotalCell.Padding = 6;
+            subtotalCell.BorderColor = borderColor;
+            productTable.AddCell(subtotalCell);
         }
 
-        doc.Add(table);
+        doc.Add(productTable);
         doc.Add(new iTextParagraph(" "));
 
-        // Total
-        doc.Add(new iTextParagraph($"TOTAL: C${total:F2}", iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 14)));
+        // Totals Section
+        PdfPTable totalsTable = new PdfPTable(2);
+        totalsTable.WidthPercentage = 50;
+        totalsTable.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        totalsTable.SetWidths(new float[] { 40f, 60f });
+
+        decimal subtotalAmount = total / 1.15m;
+        decimal vatAmount = total - subtotalAmount;
+
+        PdfPCell subtotalLabelCell = new PdfPCell(new iTextParagraph("SUBTOTAL:",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+        subtotalLabelCell.Border = iTextRectangle.NO_BORDER;
+        subtotalLabelCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        subtotalLabelCell.Padding = 3;
+        totalsTable.AddCell(subtotalLabelCell);
+
+        PdfPCell subtotalValueCell = new PdfPCell(new iTextParagraph($"C${subtotalAmount:F2}",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+        subtotalValueCell.Border = iTextRectangle.NO_BORDER;
+        subtotalValueCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        subtotalValueCell.Padding = 3;
+        totalsTable.AddCell(subtotalValueCell);
+
+        PdfPCell ivaLabelCell = new PdfPCell(new iTextParagraph("IVA (15%):",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+        ivaLabelCell.Border = iTextRectangle.NO_BORDER;
+        ivaLabelCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        ivaLabelCell.Padding = 3;
+        totalsTable.AddCell(ivaLabelCell);
+
+        PdfPCell ivaValueCell = new PdfPCell(new iTextParagraph($"C${vatAmount:F2}",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+        ivaValueCell.Border = iTextRectangle.NO_BORDER;
+        ivaValueCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        ivaValueCell.Padding = 3;
+        totalsTable.AddCell(ivaValueCell);
+
+        if (descuentoTotal > 0)
+        {
+            PdfPCell descuentoLabelCell = new PdfPCell(new iTextParagraph("DESCUENTO:",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+            descuentoLabelCell.Border = iTextRectangle.NO_BORDER;
+            descuentoLabelCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+            descuentoLabelCell.Padding = 3;
+            totalsTable.AddCell(descuentoLabelCell);
+
+            PdfPCell descuentoValueCell = new PdfPCell(new iTextParagraph($"-C${descuentoTotal:F2}",
+                iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+            descuentoValueCell.Border = iTextRectangle.NO_BORDER;
+            descuentoValueCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+            descuentoValueCell.Padding = 3;
+            totalsTable.AddCell(descuentoValueCell);
+        }
+
+        PdfPCell separatorCell = new PdfPCell(new iTextParagraph(""));
+        separatorCell.Colspan = 2;
+        separatorCell.Border = iTextRectangle.BOTTOM_BORDER;
+        separatorCell.BorderWidthBottom = 1f;
+        separatorCell.BorderColorBottom = primary500;
+        separatorCell.Padding = 5;
+        totalsTable.AddCell(separatorCell);
+
+        PdfPCell totalLabelCell = new PdfPCell(new iTextParagraph("TOTAL:",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 12)));
+        totalLabelCell.Border = iTextRectangle.NO_BORDER;
+        totalLabelCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        totalLabelCell.Padding = 3;
+        totalLabelCell.BackgroundColor = footerBg;
+        totalsTable.AddCell(totalLabelCell);
+
+        PdfPCell totalValueCell = new PdfPCell(new iTextParagraph($"C${total:F2}",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_BOLD, 12)));
+        totalValueCell.Border = iTextRectangle.NO_BORDER;
+        totalValueCell.HorizontalAlignment = iTextElement.ALIGN_RIGHT;
+        totalValueCell.Padding = 3;
+        totalValueCell.BackgroundColor = footerBg;
+        totalsTable.AddCell(totalValueCell);
+
+        doc.Add(totalsTable);
+        doc.Add(new iTextParagraph(" "));
         doc.Add(new iTextParagraph(" "));
 
-        // Líneas de firma y texto
-        PdfContentByte cb = writer.DirectContent;
-        float yLinea = doc.BottomMargin + 50;
-        float anchoLinea = 60;
+        // Signature Lines
+        PdfPTable signatureTable = new PdfPTable(2);
+        signatureTable.WidthPercentage = 80;
+        signatureTable.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+        signatureTable.SetWidths(new float[] { 50f, 50f });
 
-        float xEntregue = doc.LeftMargin;
-        cb.MoveTo(xEntregue, yLinea);
-        cb.LineTo(xEntregue + anchoLinea, yLinea);
-        cb.Stroke();
+        PdfPCell leftSignatureCell = new PdfPCell();
+        leftSignatureCell.Border = iTextRectangle.NO_BORDER;
+        leftSignatureCell.Padding = 10;
+        leftSignatureCell.AddElement(new iTextParagraph("___________________",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+        leftSignatureCell.AddElement(new iTextParagraph("Entregué Conforme",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+        leftSignatureCell.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+        signatureTable.AddCell(leftSignatureCell);
 
-        float xRecibi = doc.PageSize.Width - doc.RightMargin - anchoLinea;
-        cb.MoveTo(xRecibi, yLinea);
-        cb.LineTo(xRecibi + anchoLinea, yLinea);
-        cb.Stroke();
+        PdfPCell rightSignatureCell = new PdfPCell();
+        rightSignatureCell.Border = iTextRectangle.NO_BORDER;
+        rightSignatureCell.Padding = 10;
+        rightSignatureCell.AddElement(new iTextParagraph("___________________",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 10)));
+        rightSignatureCell.AddElement(new iTextParagraph("Recibí Conforme",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA, 9)));
+        rightSignatureCell.HorizontalAlignment = iTextElement.ALIGN_CENTER;
+        signatureTable.AddCell(rightSignatureCell);
 
-        BaseFont bf = BaseFont.CreateFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
-        cb.BeginText();
-        cb.SetFontAndSize(bf, 10);
-        cb.ShowTextAligned(Element.ALIGN_CENTER, "Entregué Conforme", xEntregue + anchoLinea / 2, yLinea - 12, 0);
-        cb.ShowTextAligned(Element.ALIGN_CENTER, "Recibí Conforme", xRecibi + anchoLinea / 2, yLinea - 12, 0);
-        cb.EndText();
-
+        doc.Add(signatureTable);
         doc.Add(new iTextParagraph(" "));
-        doc.Add(new iTextParagraph("Gracias por su compra.",
-            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_OBLIQUE, 12)));
+
+        // Footer
+        iTextParagraph footer = new iTextParagraph("¡Gracias por su compra! • Este documento es de carácter fiscal",
+            iTextFontFactory.GetFont(iTextFontFactory.HELVETICA_OBLIQUE, 9));
+        footer.Alignment = iTextElement.ALIGN_CENTER;
+        footer.Font.Color = new BaseColor(45, 41, 38);
+        doc.Add(footer);
 
         doc.Close();
         pdfBytes = ms.ToArray();
     }
 
-    // ✅ CORREGIDO: Usar Conexion.ObtenerConexion() también para guardar
+    // Save PDF to database - FIXED: removed id_relacionado column
     using (var conn = Conexion.ObtenerConexion())
     {
         using (var cmd = new NpgsqlCommand(@"
@@ -944,7 +1177,10 @@ public void GenerarYGuardarPDFFactura(int idFactura, string connectionString)
             UseShellExecute = true
         });
     }
-}        private void LimpiarTodo()
+}
+
+
+private void LimpiarTodo()
         {
             carrito.Clear();
             RefrescarCarrito();

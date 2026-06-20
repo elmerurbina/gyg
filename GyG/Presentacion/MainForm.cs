@@ -18,7 +18,7 @@ namespace GyG.Presentacion
         private void InicializarLayout()
         {
             this.WindowState = FormWindowState.Maximized;
-            this.Text = "Negocio+";
+            this.Text = "Peleteria Sacuanjoche";
             this.BackColor = Color.White;
 
             // Crear Sidebar

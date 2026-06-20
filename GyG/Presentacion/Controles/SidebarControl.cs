@@ -53,7 +53,7 @@ namespace GyG.Presentacion.Controles
             Label lblTitulo = new Label
             {
                 Text = "SACUANJOCHE",
-                Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
                 ForeColor = textWhite,
                 BackColor = Color.Transparent,
                 TextAlign = ContentAlignment.MiddleCenter,
